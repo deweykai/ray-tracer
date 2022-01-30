@@ -83,6 +83,7 @@ impl Index<(usize, usize)> for Matrix {
 use std::ops::Mul;
 
 impl Mul for Matrix {
+    // TODO: make matrix use references
     type Output = Matrix;
 
     fn mul(self, rhs: Self) -> Self {
@@ -252,5 +253,11 @@ mod tests {
         let result = matrix!([0, 9, 1, 0], [9, 8, 8, 0], [3, 0, 5, 5], [0, 8, 3, 8]);
 
         assert_eq!(a.transpose(), result);
+    }
+
+    #[test]
+    fn transpose_identity_matrix() {
+        let a = Matrix::identity(4);
+        assert_eq!(a.transpose(), a);
     }
 }
