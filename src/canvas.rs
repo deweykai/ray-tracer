@@ -22,7 +22,7 @@ fn line_wrap(s: String) -> String {
             return format!("{}\n{}", &s[..i], line_wrap(s[i + 1..].to_string()));
         }
     }
-    return s;
+    s
 }
 
 impl Canvas {
@@ -60,7 +60,7 @@ impl Canvas {
                     .reduce(|acc, s| acc + " " + &s)
                     .unwrap()
             })
-            .map(|s| line_wrap(s))
+            .map(line_wrap)
             .reduce(|acc, s| acc + "\n" + &s)
             .unwrap();
         format!("{}\n{}\n", header, body)

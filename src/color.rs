@@ -5,21 +5,24 @@ pub struct Color {
     pub blue: f64,
 }
 
-impl Color {
-    pub fn new(red: f64, green: f64, blue: f64) -> Color {
-        Color { red, green, blue }
-    }
-
-    pub fn to_string(&self) -> String {
+impl fmt::Display for Color {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fn to255(f: f64) -> u32 {
             (f * 256.).clamp(0., 255.) as u32
         }
-        format!(
+        write!(
+            f,
             "{} {} {}",
             to255(self.red),
             to255(self.green),
             to255(self.blue)
         )
+    }
+}
+
+impl Color {
+    pub fn new(red: f64, green: f64, blue: f64) -> Color {
+        Color { red, green, blue }
     }
 }
 
@@ -33,6 +36,7 @@ impl PartialEq for Color {
     }
 }
 
+use core::fmt;
 use std::ops::{Add, Mul, Sub};
 impl Add for Color {
     type Output = Self;

@@ -22,7 +22,7 @@ impl PartialEq for Matrix {
         if self.width != other.width || self.height != other.height {
             return false;
         }
-        return self.data == self.data;
+        self.data == other.data
     }
 }
 
