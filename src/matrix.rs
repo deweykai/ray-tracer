@@ -29,6 +29,36 @@ impl Matrix {
 
         Matrix::new(data)
     }
+
+    pub fn transpose(&self) -> Matrix {
+        let data = (0..self.width)
+            .map(|x| {
+                (0..self.height)
+                    .map(|y| self.data[y][x])
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+
+        Matrix::new(data)
+    }
+}
+
+#[macro_export]
+macro_rules! matrix {
+    ($([$($x:expr),+]),+) => {
+        {
+            use crate::matrix::Matrix;
+            let mut data = Vec::new();
+            $(
+                let mut row = Vec::new();
+                $(
+                    row.push($x as f64);
+                )*
+                data.push(row);
+            )*
+            Matrix::new(data)
+        }
+    }
 }
 
 impl PartialEq for Matrix {
@@ -215,5 +245,12 @@ mod tests {
         ]);
 
         assert_eq!(a.clone() * Matrix::identity(4), a);
+    }
+    #[test]
+    fn transpose_matrix() {
+        let a = matrix!([0, 9, 3, 0], [9, 8, 0, 8], [1, 8, 5, 3], [0, 0, 5, 8]);
+        let result = matrix!([0, 9, 1, 0], [9, 8, 8, 0], [3, 0, 5, 5], [0, 8, 3, 8]);
+
+        assert_eq!(a.transpose(), result);
     }
 }
