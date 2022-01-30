@@ -1,6 +1,6 @@
 use crate::tuple::Tuple;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Matrix {
     width: usize,
     height: usize,
@@ -16,6 +16,18 @@ impl Matrix {
             width,
             height,
         }
+    }
+
+    pub fn identity(size: usize) -> Matrix {
+        let data = (0..size)
+            .map(|y| {
+                (0..size)
+                    .map(|x| if x == y { 1.0 } else { 0.0 })
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+
+        Matrix::new(data)
     }
 }
 
@@ -180,7 +192,7 @@ mod tests {
         assert_eq!(a * b, result);
     }
     #[test]
-    fn multiple_matrix_by_tuple() {
+    fn multiply_matrix_by_tuple() {
         let a = Matrix::new(vec![
             vec![1.0, 2.0, 3.0, 4.0],
             vec![2.0, 4.0, 4.0, 2.0],
@@ -192,5 +204,16 @@ mod tests {
         let result = Tuple::new(18.0, 24.0, 33.0, 1.0);
 
         assert_eq!(a * b, result);
+    }
+    #[test]
+    fn multiply_matrix_by_identity() {
+        let a = Matrix::new(vec![
+            vec![0.0, 1.0, 2.0, 4.0],
+            vec![1.0, 2.0, 4.0, 8.0],
+            vec![2.0, 4.0, 8.0, 16.0],
+            vec![4.0, 8.0, 16.0, 32.0],
+        ]);
+
+        assert_eq!(a.clone() * Matrix::identity(4), a);
     }
 }
