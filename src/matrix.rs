@@ -1,3 +1,5 @@
+use crate::tuple::Tuple;
+
 #[derive(Debug)]
 pub struct Matrix {
     width: usize,
@@ -62,6 +64,25 @@ impl Mul for Matrix {
             .collect::<Vec<Vec<f64>>>();
 
         Matrix::new(data)
+    }
+}
+
+impl Mul<Tuple> for Matrix {
+    type Output = Tuple;
+    fn mul(self, t: Tuple) -> Tuple {
+        assert_eq!(self.width, 4);
+        assert_eq!(self.height, 4);
+
+        let data = (0..4)
+            .map(|y| {
+                self.data[y][0] * t.x
+                    + self.data[y][1] * t.y
+                    + self.data[y][2] * t.z
+                    + self.data[y][3] * t.w
+            })
+            .collect::<Vec<_>>();
+
+        Tuple::new(data[0], data[1], data[2], data[3])
     }
 }
 
@@ -155,6 +176,20 @@ mod tests {
             vec![40.0, 58.0, 110.0, 102.0],
             vec![16.0, 26.0, 46.0, 42.0],
         ]);
+
+        assert_eq!(a * b, result);
+    }
+    #[test]
+    fn multiple_matrix_by_tuple() {
+        let a = Matrix::new(vec![
+            vec![1.0, 2.0, 3.0, 4.0],
+            vec![2.0, 4.0, 4.0, 2.0],
+            vec![8.0, 6.0, 4.0, 1.0],
+            vec![0.0, 0.0, 0.0, 1.0],
+        ]);
+
+        let b = Tuple::new(1.0, 2.0, 3.0, 1.0);
+        let result = Tuple::new(18.0, 24.0, 33.0, 1.0);
 
         assert_eq!(a * b, result);
     }
