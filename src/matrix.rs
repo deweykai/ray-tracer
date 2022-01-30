@@ -36,6 +36,35 @@ impl Index<(usize, usize)> for Matrix {
     }
 }
 
+use std::ops::Mul;
+
+impl Mul for Matrix {
+    type Output = Matrix;
+
+    fn mul(self, rhs: Self) -> Self {
+        let width = rhs.width;
+        let height = self.height;
+
+        assert!(self.width == rhs.height);
+
+        let data = (0..height)
+            .map(|y| {
+                (0..width)
+                    .map(|x| {
+                        let mut sum: f64 = 0.0;
+                        for i in 0..self.width {
+                            sum += self.data[y][i] * rhs.data[i][x];
+                        }
+                        sum
+                    })
+                    .collect::<Vec<f64>>()
+            })
+            .collect::<Vec<Vec<f64>>>();
+
+        Matrix::new(data)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -105,5 +134,28 @@ mod tests {
             vec![4.0, 3.0, 2.0, 1.0],
         ]);
         assert_ne!(a, b);
+    }
+    #[test]
+    fn multiply_two_matrices() {
+        let a = Matrix::new(vec![
+            vec![1.0, 2.0, 3.0, 4.0],
+            vec![5.0, 6.0, 7.0, 8.0],
+            vec![9.0, 8.0, 7.0, 6.0],
+            vec![5.0, 4.0, 3.0, 2.0],
+        ]);
+        let b = Matrix::new(vec![
+            vec![-2.0, 1.0, 2.0, 3.0],
+            vec![3.0, 2.0, 1.0, -1.0],
+            vec![4.0, 3.0, 6.0, 5.0],
+            vec![1.0, 2.0, 7.0, 8.0],
+        ]);
+        let result = Matrix::new(vec![
+            vec![20.0, 22.0, 50.0, 48.0],
+            vec![44.0, 54.0, 114.0, 108.0],
+            vec![40.0, 58.0, 110.0, 102.0],
+            vec![16.0, 26.0, 46.0, 42.0],
+        ]);
+
+        assert_eq!(a * b, result);
     }
 }
