@@ -179,7 +179,7 @@ impl Mul for Matrix {
     // TODO: make matrix use references
     type Output = Matrix;
 
-    fn mul(self, rhs: Self) -> Self {
+    fn mul(self, rhs: Self) -> Matrix {
         let width = rhs.width;
         let height = self.height;
 
@@ -446,6 +446,7 @@ mod tests {
 
     #[test]
     fn calculate_inverse_4x4_matrix() {
+        // test 1
         let a = matrix!([-5, 2, 6, -8], [1, -5, 1, 8], [7, 7, -6, -7], [1, -3, 7, 4]);
         let b = a.inverse().unwrap();
 
@@ -464,5 +465,45 @@ mod tests {
                 [-0.52256, -0.81391, -0.30075, 0.30639]
             )
         );
+
+        // test 2
+        let a = matrix!([8, -5, 9, 2], [7, 5, 6, 1], [-6, 0, 9, 6], [-3, 0, -9, -4]);
+        let b = a.inverse().unwrap();
+
+        assert_eq!(
+            b,
+            matrix!(
+                [-0.15385, -0.15385, -0.28205, -0.53846],
+                [-0.07692, 0.12308, 0.02564, 0.03077],
+                [0.35897, 0.35897, 0.43590, 0.92308],
+                [-0.69231, -0.69231, -0.76923, -1.92308]
+            )
+        );
+
+        // test 3
+        let a = matrix!([9, 3, 0, 9], [-5, -2, -6, -3], [-4, 9, 6, 4], [-7, 6, 6, 2]);
+
+        let b = a.inverse().unwrap();
+
+        assert_eq!(
+            b,
+            matrix!(
+                [-0.04074, -0.07778, 0.14444, -0.22222],
+                [-0.07778, 0.03333, 0.36667, -0.33333],
+                [-0.02901, -0.14630, -0.10926, 0.12963],
+                [0.17778, 0.06667, -0.26667, 0.33333]
+            )
+        );
+    }
+
+    #[test]
+    fn multiple_matrix_by_inverse() {
+        let a = matrix!([3, -9, 7, 3], [3, -8, 2, -9], [-4, 4, 4, 1], [-6, 5, -1, 1]);
+
+        let b = matrix!([8, 2, 2, 2], [3, -1, 7, 0], [7, 0, 5, 4], [6, -2, 0, 5]);
+
+        let c = a.clone() * b.clone();
+
+        assert_eq!(c * b.inverse().unwrap(), a);
     }
 }
