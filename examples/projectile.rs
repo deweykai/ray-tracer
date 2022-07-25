@@ -1,6 +1,6 @@
 use ray_tracer::canvas::Canvas;
 use ray_tracer::color::Color;
-use ray_tracer::tuple::Tuple;
+use ray_tracer::tuple::{Point, Tuple, Vector};
 
 #[derive(Debug)]
 struct Projectile {
@@ -30,12 +30,12 @@ impl Projectile {
 fn main() {
     let mut c = Canvas::new(900, 500);
     let mut p = Projectile::new(
-        Tuple::new_point(0., 1., 0.),
-        Tuple::new_vector(1., 1.8, 0.).normalize() * 11.25,
+        Point::new(0., 1., 0.).as_tuple(),
+        Vector::new(1., 1.8, 0.).as_tuple() * 11.25,
     );
     let e = Env {
-        gravity: Tuple::new_vector(0., -0.1, 0.),
-        wind: Tuple::new_vector(-0.01, 0., 0.),
+        gravity: Vector::new(0., -0.1, 0.).as_tuple(),
+        wind: Vector::new(-0.01, 0., 0.).as_tuple(),
     };
     loop {
         p = p.tick(&e);

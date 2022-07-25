@@ -13,14 +13,6 @@ impl Tuple {
         Tuple { x, y, z, w }
     }
 
-    pub fn new_point(x: f64, y: f64, z: f64) -> Tuple {
-        Tuple::new(x, y, z, 1.0)
-    }
-
-    pub fn new_vector(x: f64, y: f64, z: f64) -> Tuple {
-        Tuple::new(x, y, z, 0.0)
-    }
-
     pub fn zero() -> Tuple {
         Tuple::new(0., 0., 0., 0.)
     }
@@ -45,8 +37,8 @@ impl Tuple {
         self.x * other.x + self.y * other.y + self.z * other.z + self.w * other.w
     }
 
-    pub fn cross(self, other: Tuple) -> Tuple {
-        Tuple::new_vector(
+    pub fn cross(self, other: Tuple) -> Vector {
+        Vector::new(
             self.y * other.z - self.z * other.y,
             self.z * other.x - self.x * other.z,
             self.x * other.y - self.y * other.x,
@@ -127,7 +119,11 @@ pub struct Point(Tuple);
 
 impl Vector {
     pub fn new(x: f64, y: f64, z: f64) -> Vector {
-        Vector(Tuple::new_vector(x, y, z))
+        Vector(Tuple::new(x, y, z, 0.0))
+    }
+
+    pub fn as_tuple(self) -> Tuple {
+        Tuple::from(self)
     }
 }
 
@@ -151,7 +147,11 @@ impl TryFrom<Tuple> for Vector {
 
 impl Point {
     pub fn new(x: f64, y: f64, z: f64) -> Point {
-        Point(Tuple::new_point(x, y, z))
+        Point(Tuple::new(x, y, z, 1.0))
+    }
+
+    pub fn as_tuple(self) -> Tuple {
+        Tuple::from(self)
     }
 }
 
@@ -190,15 +190,15 @@ mod tests {
     }
     #[test]
     fn tuple_point_constructor() {
-        let point = Tuple::new_point(4., -4., 3.);
+        let point = Point::new(4., -4., 3.);
         let tuple = Tuple::new(4., -4., 3., 1.);
-        assert_eq!(point, tuple);
+        assert_eq!(Tuple::from(point), tuple);
     }
     #[test]
     fn tuple_vector_constructor() {
-        let vector = Tuple::new_vector(4., -4., 3.);
+        let vector = Vector::new(4., -4., 3.);
         let tuple = Tuple::new(4., -4., 3., 0.);
-        assert_eq!(vector, tuple);
+        assert_eq!(Tuple::from(vector), tuple);
     }
     #[test]
     fn add_two_tuples() {
@@ -209,23 +209,23 @@ mod tests {
     }
     #[test]
     fn sub_two_points() {
-        let a = Tuple::new_point(3., 2., 1.);
-        let b = Tuple::new_point(5., 6., 7.);
-        let diff = Tuple::new_vector(-2., -4., -6.);
-        assert_eq!(a - b, diff);
+        let a = Point::new(3., 2., 1.);
+        let b = Point::new(5., 6., 7.);
+        let diff = Vector::new(-2., -4., -6.);
+        assert_eq!(a.as_tuple() - b.as_tuple(), diff.as_tuple());
     }
     #[test]
     fn sub_vector_from_point() {
-        let p = Tuple::new_point(3., 2., 1.);
-        let v = Tuple::new_vector(5., 6., 7.);
-        let diff = Tuple::new_point(-2., -4., -6.);
-        assert_eq!(p - v, diff);
+        let p = Tuple::from(Point::new(3., 2., 1.));
+        let v = Tuple::from(Vector::new(5., 6., 7.));
+        let diff = Point::new(-2., -4., -6.);
+        assert_eq!(Tuple::from(p) - Tuple::from(v), Tuple::from(diff));
     }
     #[test]
     fn sub_vector_from_zero() {
-        let v = Tuple::new_vector(1., -2., 3.);
-        let diff = Tuple::new_vector(-1., 2., -3.);
-        assert_eq!(Tuple::zero() - v, diff);
+        let v = Vector::new(1., -2., 3.);
+        let diff = Vector::new(-1., 2., -3.);
+        assert_eq!(Tuple::zero() - v.as_tuple(), diff.as_tuple());
     }
     #[test]
     fn negate_tuple() {
@@ -253,35 +253,41 @@ mod tests {
     }
     #[test]
     fn magnitude_of_vector() {
-        assert_eq!(Tuple::new_vector(1., 0., 0.).magnitude(), 1.);
-        assert_eq!(Tuple::new_vector(0., 1., 0.).magnitude(), 1.);
-        assert_eq!(Tuple::new_vector(0., 0., 1.).magnitude(), 1.);
-        assert_eq!(Tuple::new_vector(1., 2., 3.).magnitude(), 14f64.sqrt());
-        assert_eq!(Tuple::new_vector(-1., -2., -3.).magnitude(), 14f64.sqrt());
+        assert_eq!(Vector::new(1., 0., 0.).as_tuple().magnitude(), 1.);
+        assert_eq!(Vector::new(0., 1., 0.).as_tuple().magnitude(), 1.);
+        assert_eq!(Vector::new(0., 0., 1.).as_tuple().magnitude(), 1.);
+        assert_eq!(Vector::new(1., 2., 3.).as_tuple().magnitude(), 14f64.sqrt());
+        assert_eq!(
+            Vector::new(-1., -2., -3.).as_tuple().magnitude(),
+            14f64.sqrt()
+        );
     }
     #[test]
     fn normalize_vector() {
         assert_eq!(
-            Tuple::new_vector(4., 0., 0.).normalize(),
-            Tuple::new_vector(1., 0., 0.)
+            Vector::new(4., 0., 0.).as_tuple().normalize(),
+            Vector::new(1., 0., 0.).as_tuple()
         );
         assert_eq!(
-            Tuple::new_vector(1., 2., 3.).normalize(),
-            Tuple::new_vector(1. / 14f64.sqrt(), 2. / 14f64.sqrt(), 3. / 14f64.sqrt())
+            Vector::new(1., 2., 3.).as_tuple().normalize(),
+            Vector::new(1. / 14f64.sqrt(), 2. / 14f64.sqrt(), 3. / 14f64.sqrt()).as_tuple()
         );
-        assert_eq!(Tuple::new_vector(4., 0., 0.).normalize().magnitude(), 1.);
+        assert_eq!(
+            Vector::new(4., 0., 0.).as_tuple().normalize().magnitude(),
+            1.
+        );
     }
     #[test]
     fn dot_product_two_vectors() {
-        let a = Tuple::new_vector(1., 2., 3.);
-        let b = Tuple::new_vector(2., 3., 4.);
+        let a = Vector::new(1., 2., 3.).as_tuple();
+        let b = Vector::new(2., 3., 4.).as_tuple();
         assert_eq!(a.dot(b), 20.);
     }
     #[test]
     fn cross_product_two_vectors() {
-        let a = Tuple::new_vector(1., 2., 3.);
-        let b = Tuple::new_vector(2., 3., 4.);
-        assert_eq!(a.cross(b), Tuple::new_vector(-1., 2., -1.));
-        assert_eq!(b.cross(a), Tuple::new_vector(1., -2., 1.));
+        let a = Vector::new(1., 2., 3.).as_tuple();
+        let b = Vector::new(2., 3., 4.).as_tuple();
+        assert_eq!(a.cross(b), Vector::new(-1., 2., -1.));
+        assert_eq!(b.cross(a), Vector::new(1., -2., 1.));
     }
 }

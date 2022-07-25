@@ -3,7 +3,7 @@ use std::f64::consts::PI;
 use ray_tracer::canvas::Canvas;
 use ray_tracer::color::Color;
 use ray_tracer::transformations;
-use ray_tracer::tuple::Tuple;
+use ray_tracer::tuple::Point;
 
 fn main() {
     let width = 200;
@@ -11,7 +11,7 @@ fn main() {
     let mut canv = Canvas::new(width, height);
 
     for i in 0..12 {
-        let p = Tuple::new_point(1.0, 0.0, 0.0);
+        let p = Point::new(1.0, 0.0, 0.0).as_tuple();
         let a = transformations::rotation_z(i as f64 * PI / 6.0);
         let b = transformations::scaling(width as f64 / 3.0, height as f64 / 3.0, 0.0);
         let c = transformations::translation(width as f64 / 2.0, height as f64 / 2.0, 0.0);
