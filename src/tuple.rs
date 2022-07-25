@@ -120,6 +120,59 @@ impl Div<f64> for Tuple {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Vector(Tuple);
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Point(Tuple);
+
+impl Vector {
+    pub fn new(x: f64, y: f64, z: f64) -> Vector {
+        Vector(Tuple::new_vector(x, y, z))
+    }
+}
+
+impl From<Vector> for Tuple {
+    fn from(vector: Vector) -> Self {
+        vector.0
+    }
+}
+
+impl TryFrom<Tuple> for Vector {
+    type Error = &'static str;
+
+    fn try_from(tuple: Tuple) -> Result<Self, Self::Error> {
+        if tuple.is_vector() {
+            Ok(Vector(tuple))
+        } else {
+            Err("failed to convert a tuple into a vector")
+        }
+    }
+}
+
+impl Point {
+    pub fn new(x: f64, y: f64, z: f64) -> Point {
+        Point(Tuple::new_point(x, y, z))
+    }
+}
+
+impl From<Point> for Tuple {
+    fn from(point: Point) -> Self {
+        point.0
+    }
+}
+
+impl TryFrom<Tuple> for Point {
+    type Error = &'static str;
+
+    fn try_from(tuple: Tuple) -> Result<Self, Self::Error> {
+        if tuple.is_point() {
+            Ok(Point(tuple))
+        } else {
+            Err("failed to convert a tuple into a point")
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
