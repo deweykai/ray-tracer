@@ -1,6 +1,9 @@
 pub mod canvas;
 pub mod color;
+pub mod hit;
+pub mod intersection;
 pub mod matrix;
 pub mod ray;
+pub mod sphere;
 pub mod transformations;
 pub mod tuple;
