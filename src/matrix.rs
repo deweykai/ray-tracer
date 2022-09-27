@@ -132,7 +132,6 @@ impl Matrix {
 macro_rules! matrix {
     ($([$($x:expr),+]),+) => {
         {
-            use crate::matrix::Matrix;
             let mut data = Vec::new();
             $(
                 let mut row = Vec::new();
@@ -141,7 +140,7 @@ macro_rules! matrix {
                 )*
                 data.push(row);
             )*
-            Matrix::new(data)
+            $crate::matrix::Matrix::new(data)
         }
     }
 }
