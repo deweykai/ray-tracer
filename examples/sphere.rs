@@ -3,7 +3,7 @@ use ray_tracer::color::Color;
 use ray_tracer::ray::Ray;
 use ray_tracer::sphere::Sphere;
 use ray_tracer::transformations;
-use ray_tracer::tuple::{Point, Vector};
+use ray_tracer::tuple::Point;
 
 fn main() {
     let canvas_pixels = 500;
