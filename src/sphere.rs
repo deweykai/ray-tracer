@@ -1,7 +1,7 @@
 use crate::intersection::{Intersection, Intersections};
 use crate::matrix::Matrix;
 use crate::ray::Ray;
-use crate::tuple::Point;
+use crate::tuple::{Point, Vector};
 use std::sync::atomic::{AtomicU32, Ordering};
 
 #[derive(Debug, PartialEq)]
@@ -52,12 +52,33 @@ impl Sphere {
         let i2 = Intersection::new(t2, self);
         Intersections::new(&[i1, i2])
     }
+
+    pub fn normal_at(&self, world_p: Point) -> Vector {
+        let object_p = &self
+            .transform
+            .inverse()
+            .expect("failed to inverse sphere transform")
+            * world_p;
+        let object_normal = object_p - Point::new(0.0, 0.0, 0.0).as_tuple();
+
+        let mut world_normal = self
+            .transform
+            .inverse()
+            .expect("failed to inverse sphere transform")
+            .transpose()
+            * object_normal;
+        // something something about multiplying by the inverse
+        // of 3x3 submatrix of transform which can be skipped by
+        // setting w to 0.
+        world_normal.w = 0.0;
+        world_normal.normalize().try_into().unwrap()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::transformations::{scaling, translation};
+    use crate::transformations::{self, scaling, translation};
     use crate::tuple::Vector;
 
     #[test]
@@ -135,5 +156,55 @@ mod tests {
         let xs = s.intersect(r).0;
 
         assert_eq!(xs.len(), 0);
+    }
+
+    #[test]
+    fn normal_on_sphere_x_axis() {
+        let s = Sphere::new();
+        let n = s.normal_at(Point::new(1.0, 0.0, 0.0));
+        assert_eq!(n, Vector::new(1.0, 0.0, 0.0));
+    }
+
+    #[test]
+    fn normal_on_sphere_y_axis() {
+        let s = Sphere::new();
+        let n = s.normal_at(Point::new(0.0, 1.0, 0.0));
+        assert_eq!(n, Vector::new(0.0, 1.0, 0.0));
+    }
+
+    #[test]
+    fn normal_on_sphere_z_axis() {
+        let s = Sphere::new();
+        let n = s.normal_at(Point::new(0.0, 0.0, 1.0));
+        assert_eq!(n, Vector::new(0.0, 0.0, 1.0));
+    }
+
+    #[test]
+    fn normal_on_sphere_not_at_axis() {
+        let s = Sphere::new();
+        let n = s.normal_at(Point::new(
+            3f64.sqrt() / 3.0,
+            3f64.sqrt() / 3.0,
+            3f64.sqrt() / 3.0,
+        ));
+        assert_eq!(
+            n,
+            Vector::new(3f64.sqrt() / 3.0, 3f64.sqrt() / 3.0, 3f64.sqrt() / 3.0,)
+        );
+    }
+
+    #[test]
+    fn normal_on_translated_sphere() {
+        let s = Sphere::new().set_transform(translation(0.0, 1.0, 0.0));
+        let n = s.normal_at(Point::new(0.0, 1.70711, -0.70711));
+        assert_eq!(n, Vector::new(0.0, 0.70711, -0.70711));
+    }
+
+    #[test]
+    fn normal_on_transformed_sphere() {
+        let m = scaling(1.0, 0.5, 1.0) * transformations::rotation_z(std::f64::consts::PI / 5.0);
+        let s = Sphere::new().set_transform(m);
+        let n = s.normal_at(Point::new(0.0, 2f64.sqrt() / 2.0, -2f64.sqrt() / 2.0));
+        assert_eq!(n, Vector::new(0.0, 0.97014, -0.24254));
     }
 }
