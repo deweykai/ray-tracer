@@ -125,6 +125,12 @@ impl Vector {
     pub fn as_tuple(self) -> Tuple {
         Tuple::from(self)
     }
+
+    pub fn reflect(self, normal: Vector) -> Vector {
+        let normal = normal.as_tuple();
+        let inv = self.as_tuple();
+        (inv - normal * 2.0 * inv.dot(normal)).try_into().unwrap()
+    }
 }
 
 impl From<Vector> for Tuple {
@@ -289,5 +295,21 @@ mod tests {
         let b = Vector::new(2., 3., 4.).as_tuple();
         assert_eq!(a.cross(b), Vector::new(-1., 2., -1.));
         assert_eq!(b.cross(a), Vector::new(1., -2., 1.));
+    }
+
+    #[test]
+    fn reflecting_a_vector_at_45_deg() {
+        let v = Vector::new(1.0, -1.0, 0.0);
+        let n = Vector::new(0.0, 1.0, 0.0);
+        let r = v.reflect(n);
+        assert_eq!(r, Vector::new(1.0, 1.0, 0.0));
+    }
+
+    #[test]
+    fn reflecting_vector_off_a_slanted_surface() {
+        let v = Vector::new(0.0, -1.0, 0.0);
+        let n = Vector::new(2f64.sqrt() / 2f64, 2f64.sqrt() / 2f64, 0f64);
+        let r = v.reflect(n);
+        assert_eq!(r, Vector::new(1.0, 0.0, 0.0));
     }
 }
