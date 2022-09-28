@@ -221,9 +221,14 @@ impl Div<f64> for Matrix {
     }
 }
 
-impl Mul<Tuple> for Matrix {
+impl<T> Mul<T> for &Matrix
+where
+    T: Into<Tuple>,
+{
     type Output = Tuple;
-    fn mul(self, t: Tuple) -> Tuple {
+    fn mul(self, t: T) -> Tuple {
+        let t = t.into();
+
         assert_eq!(self.width, 4);
         assert_eq!(self.height, 4);
 
@@ -237,6 +242,16 @@ impl Mul<Tuple> for Matrix {
             .collect::<Vec<_>>();
 
         Tuple::new(data[0], data[1], data[2], data[3])
+    }
+}
+
+impl<T> Mul<T> for Matrix
+where
+    T: Into<Tuple>,
+{
+    type Output = Tuple;
+    fn mul(self, t: T) -> Tuple {
+        (&self) * t
     }
 }
 
