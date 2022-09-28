@@ -5,6 +5,8 @@ pub struct Color {
     pub blue: f64,
 }
 
+pub const BLACK: Color = Color::new(0.0, 0.0, 0.0);
+
 impl fmt::Display for Color {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fn to255(f: f64) -> u32 {
@@ -21,7 +23,7 @@ impl fmt::Display for Color {
 }
 
 impl Color {
-    pub fn new(red: f64, green: f64, blue: f64) -> Color {
+    pub const fn new(red: f64, green: f64, blue: f64) -> Color {
         Color { red, green, blue }
     }
 }

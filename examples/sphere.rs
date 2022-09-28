@@ -1,9 +1,11 @@
 use ray_tracer::canvas::Canvas;
 use ray_tracer::color::Color;
+use ray_tracer::light::PointLight;
+use ray_tracer::material::{lighting, Material};
 use ray_tracer::ray::Ray;
 use ray_tracer::sphere::Sphere;
 use ray_tracer::transformations;
-use ray_tracer::tuple::Point;
+use ray_tracer::tuple::{Point, Vector};
 
 fn main() {
     let canvas_pixels = 500;
@@ -14,8 +16,11 @@ fn main() {
     let half = wall_size / 2.0;
 
     let mut canv = Canvas::new(canvas_pixels, canvas_pixels);
-    let s = Sphere::new().set_transform(transformations::scaling(1.0, 0.5, 1.0));
-    let color = Color::new(1.0, 0.0, 0.0);
+    let s = Sphere::new().set_material(Material {
+        color: Color::new(1.0, 0.2, 1.0),
+        ..Default::default()
+    });
+    let light = PointLight::new(Point::new(-10.0, 10.0, -10.0), Color::new(1.0, 1.0, 1.0));
 
     for y in 0..canvas_pixels {
         // top = +half, bottom = -half
@@ -34,7 +39,11 @@ fn main() {
             );
 
             let xs = s.intersect(r);
-            if let Some(_) = xs.hit() {
+            if let Some(hit) = xs.hit() {
+                let point = r.position(hit.t);
+                let normal = hit.object.normal_at(point);
+                let eye: Vector = (-r.direction.as_tuple()).try_into().unwrap();
+                let color = lighting(hit.object.material, light, point, eye, normal);
                 canv = canv.write_pixel(x, y, color);
             }
         }
