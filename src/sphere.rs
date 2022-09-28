@@ -1,4 +1,5 @@
 use crate::intersection::{Intersection, Intersections};
+use crate::material::Material;
 use crate::matrix::Matrix;
 use crate::ray::Ray;
 use crate::tuple::{Point, Vector};
@@ -8,6 +9,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 pub struct Sphere {
     id: u32,
     transform: Matrix,
+    material: Material,
 }
 
 impl Sphere {
@@ -16,11 +18,17 @@ impl Sphere {
         Sphere {
             id: COUNT.fetch_add(1, Ordering::Relaxed),
             transform: Matrix::identity(4),
+            material: Default::default(),
         }
     }
 
     pub fn set_transform(mut self, transform: Matrix) -> Sphere {
         self.transform = transform;
+        self
+    }
+
+    pub fn set_material(mut self, material: Material) -> Sphere {
+        self.material = material;
         self
     }
 
@@ -206,5 +214,21 @@ mod tests {
         let s = Sphere::new().set_transform(m);
         let n = s.normal_at(Point::new(0.0, 2f64.sqrt() / 2.0, -2f64.sqrt() / 2.0));
         assert_eq!(n, Vector::new(0.0, 0.97014, -0.24254));
+    }
+
+    #[test]
+    fn sphere_has_default_material() {
+        let s = Sphere::new();
+        assert_eq!(s.material, Default::default());
+    }
+
+    #[test]
+    fn sphere_assigned_material() {
+        let m = Material {
+            ambient: 1.0,
+            ..Default::default()
+        };
+        let s = Sphere::new().set_material(m);
+        assert_eq!(s.material, m);
     }
 }
