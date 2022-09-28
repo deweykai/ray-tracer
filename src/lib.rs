@@ -1,6 +1,5 @@
 pub mod canvas;
 pub mod color;
-pub mod hit;
 pub mod intersection;
 pub mod light;
 pub mod material;
