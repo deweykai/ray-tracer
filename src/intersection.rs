@@ -1,4 +1,6 @@
+use crate::ray::Ray;
 use crate::sphere::Sphere;
+use crate::tuple::{Point, Vector};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Intersection<'a> {
@@ -10,6 +12,38 @@ impl<'a> Intersection<'a> {
     pub fn new(t: f64, object: &Sphere) -> Intersection {
         Intersection { t, object }
     }
+
+    pub fn prepare_computations(&self, ray: Ray) -> Computations {
+        let t = self.t;
+        let point = ray.position(self.t);
+        let object = self.object;
+        let eyev: Vector = (-ray.direction.as_tuple()).try_into().unwrap();
+        let mut normal = self.object.normal_at(point);
+        let mut inside = false;
+
+        if normal.as_tuple().dot(eyev.as_tuple()) < 0.0 {
+            inside = true;
+            normal = (-normal.as_tuple()).try_into().unwrap();
+        }
+
+        Computations {
+            t,
+            object,
+            point,
+            eyev,
+            normal,
+            inside,
+        }
+    }
+}
+
+pub struct Computations<'a> {
+    pub object: &'a Sphere,
+    pub t: f64,
+    pub point: Point,
+    pub eyev: Vector,
+    pub normal: Vector,
+    pub inside: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -121,5 +155,40 @@ mod tests {
         let xs: Intersections = vec![i1, i2, i3, i4].into();
         let hit = xs.hit();
         assert_eq!(hit, Some(i4));
+    }
+
+    #[test]
+    fn precompute_state_of_intersection() {
+        let r = Ray::new(Point::new(0.0, 0.0, -5.0), Vector::new(0.0, 0.0, 1.0));
+        let s = Sphere::new();
+        let i = Intersection::new(4.0, &s);
+        let comps = i.prepare_computations(r);
+
+        assert_eq!(comps.object, &s);
+        assert_eq!(comps.point, Point::new(0.0, 0.0, -1.0));
+        assert_eq!(comps.eyev, Vector::new(0.0, 0.0, -1.0));
+        assert_eq!(comps.normal, Vector::new(0.0, 0.0, -1.0));
+    }
+
+    #[test]
+    fn test_hit_on_intersection_on_outside() {
+        let r = Ray::new(Point::new(0.0, 0.0, -5.0), Vector::new(0.0, 0.0, 1.0));
+        let s = Sphere::new();
+        let i = Intersection::new(4.0, &s);
+        let comps = i.prepare_computations(r);
+
+        assert!(!comps.inside)
+    }
+    #[test]
+    fn test_hit_on_intersection_on_inside() {
+        let r = Ray::new(Point::new(0.0, 0.0, 0.0), Vector::new(0.0, 0.0, 1.0));
+        let s = Sphere::new();
+        let i = Intersection::new(1.0, &s);
+        let comps = i.prepare_computations(r);
+
+        assert_eq!(comps.point, Point::new(0.0, 0.0, 1.0));
+        assert_eq!(comps.eyev, Vector::new(0.0, 0.0, -1.0));
+        assert_eq!(comps.normal, Vector::new(0.0, 0.0, -1.0));
+        assert!(comps.inside)
     }
 }
