@@ -120,26 +120,29 @@ impl Vector {
         Vector(Tuple::new(x, y, z, 0.0))
     }
 
-    fn as_tuple(self) -> Tuple {
-        Tuple::from(self)
+    pub fn zero() -> Vector {
+        Vector::new(0.0, 0.0, 0.0)
     }
 
     pub fn reflect(self, normal: Vector) -> Vector {
-        let normal = normal.as_tuple();
-        let inv = self.as_tuple();
+        let inv = self;
         (inv - normal * 2.0 * inv.dot(normal)).try_into().unwrap()
     }
 
     pub fn normalize(self) -> Vector {
-        self.as_tuple().normalize().try_into().unwrap()
+        Tuple::from(self).normalize().try_into().unwrap()
     }
 
     pub fn cross(self, rhs: Vector) -> Vector {
-        self.as_tuple().cross(rhs.as_tuple()).try_into().unwrap()
+        Tuple::from(self).cross(rhs.into()).try_into().unwrap()
     }
 
     pub fn dot(self, rhs: Vector) -> f64 {
-        self.as_tuple().dot(rhs.as_tuple()).try_into().unwrap()
+        Tuple::from(self).dot(rhs.into()).try_into().unwrap()
+    }
+
+    pub fn magnitude(self) -> f64 {
+        Tuple::from(self).magnitude()
     }
 }
 
@@ -148,7 +151,7 @@ macro_rules! impl_vector_tuple_ops {
         impl $trait for Vector {
             type Output = Vector;
             fn $fn(self, rhs: $rhs) -> Self {
-                self.as_tuple().$fn(rhs.into()).try_into().unwrap()
+                Tuple::from(self).$fn(rhs.into()).try_into().unwrap()
             }
         }
     };
@@ -162,7 +165,7 @@ impl_vector_tuple_ops!(Div<f64>, div, f64);
 impl Neg for Vector {
     type Output = Vector;
     fn neg(self) -> Self::Output {
-        (self.as_tuple().neg()).try_into().unwrap()
+        Tuple::from(self).neg().try_into().unwrap()
     }
 }
 
@@ -191,8 +194,8 @@ impl Point {
         Point(Tuple::new(x, y, z, 1.0))
     }
 
-    fn as_tuple(self) -> Tuple {
-        Tuple::from(self)
+    pub fn zero() -> Point {
+        Point::new(0.0, 0.0, 0.0)
     }
 }
 
@@ -217,7 +220,7 @@ impl TryFrom<Tuple> for Point {
 impl Sub for Point {
     type Output = Vector;
     fn sub(self, rhs: Self) -> Self::Output {
-        (self.as_tuple() - rhs.as_tuple()).try_into().unwrap()
+        (Tuple::from(self) - Tuple::from(rhs)).try_into().unwrap()
     }
 }
 
@@ -260,7 +263,7 @@ mod tests {
         let a = Point::new(3., 2., 1.);
         let b = Point::new(5., 6., 7.);
         let diff = Vector::new(-2., -4., -6.);
-        assert_eq!(a.as_tuple() - b.as_tuple(), diff.as_tuple());
+        assert_eq!(a - b, diff);
     }
     #[test]
     fn sub_vector_from_point() {
@@ -273,7 +276,7 @@ mod tests {
     fn sub_vector_from_zero() {
         let v = Vector::new(1., -2., 3.);
         let diff = Vector::new(-1., 2., -3.);
-        assert_eq!(Tuple::zero() - v.as_tuple(), diff.as_tuple());
+        assert_eq!(Vector::zero() - v, diff);
     }
     #[test]
     fn negate_tuple() {
@@ -301,40 +304,31 @@ mod tests {
     }
     #[test]
     fn magnitude_of_vector() {
-        assert_eq!(Vector::new(1., 0., 0.).as_tuple().magnitude(), 1.);
-        assert_eq!(Vector::new(0., 1., 0.).as_tuple().magnitude(), 1.);
-        assert_eq!(Vector::new(0., 0., 1.).as_tuple().magnitude(), 1.);
-        assert_eq!(Vector::new(1., 2., 3.).as_tuple().magnitude(), 14f64.sqrt());
-        assert_eq!(
-            Vector::new(-1., -2., -3.).as_tuple().magnitude(),
-            14f64.sqrt()
-        );
+        assert_eq!(Vector::new(1., 0., 0.).magnitude(), 1.);
+        assert_eq!(Vector::new(0., 1., 0.).magnitude(), 1.);
+        assert_eq!(Vector::new(0., 0., 1.).magnitude(), 1.);
+        assert_eq!(Vector::new(1., 2., 3.).magnitude(), 14f64.sqrt());
+        assert_eq!(Vector::new(-1., -2., -3.).magnitude(), 14f64.sqrt());
     }
     #[test]
     fn normalize_vector() {
+        assert_eq!(Vector::new(4., 0., 0.).normalize(), Vector::new(1., 0., 0.));
         assert_eq!(
-            Vector::new(4., 0., 0.).as_tuple().normalize(),
-            Vector::new(1., 0., 0.).as_tuple()
+            Vector::new(1., 2., 3.).normalize(),
+            Vector::new(1. / 14f64.sqrt(), 2. / 14f64.sqrt(), 3. / 14f64.sqrt())
         );
-        assert_eq!(
-            Vector::new(1., 2., 3.).as_tuple().normalize(),
-            Vector::new(1. / 14f64.sqrt(), 2. / 14f64.sqrt(), 3. / 14f64.sqrt()).as_tuple()
-        );
-        assert_eq!(
-            Vector::new(4., 0., 0.).as_tuple().normalize().magnitude(),
-            1.
-        );
+        assert_eq!(Vector::new(4., 0., 0.).normalize().magnitude(), 1.);
     }
     #[test]
     fn dot_product_two_vectors() {
-        let a = Vector::new(1., 2., 3.).as_tuple();
-        let b = Vector::new(2., 3., 4.).as_tuple();
+        let a = Vector::new(1., 2., 3.);
+        let b = Vector::new(2., 3., 4.);
         assert_eq!(a.dot(b), 20.);
     }
     #[test]
     fn cross_product_two_vectors() {
-        let a = Vector::new(1., 2., 3.).as_tuple();
-        let b = Vector::new(2., 3., 4.).as_tuple();
+        let a = Vector::new(1., 2., 3.);
+        let b = Vector::new(2., 3., 4.);
         assert_eq!(a.cross(b), Vector::new(-1., 2., -1.));
         assert_eq!(b.cross(a), Vector::new(1., -2., 1.));
     }
