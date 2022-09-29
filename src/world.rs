@@ -1,7 +1,7 @@
-use crate::color::Color;
-use crate::intersection::Intersections;
+use crate::color::{Color, BLACK};
+use crate::intersection::{Computations, Intersections};
 use crate::light::PointLight;
-use crate::material::Material;
+use crate::material::{lighting, Material};
 use crate::ray::Ray;
 use crate::sphere::Sphere;
 use crate::transformations;
@@ -20,14 +20,6 @@ impl World {
         }
     }
 
-    pub fn add_object(&mut self, sphere: Sphere) {
-        self.objects.push(sphere);
-    }
-
-    pub fn add_light(&mut self, light: PointLight) {
-        self.lights.push(light);
-    }
-
     pub fn intersect(&self, ray: Ray) -> Intersections {
         let mut intersections = Intersections::new();
         for object in &self.objects {
@@ -35,18 +27,43 @@ impl World {
         }
         intersections
     }
+
+    pub fn shade_hit(&self, comp: Computations) -> Color {
+        let mut c = Color::new(0.0, 0.0, 0.0);
+        for light in &self.lights {
+            c = c + lighting(
+                comp.object.material,
+                *light,
+                comp.point,
+                comp.eyev,
+                comp.normal,
+            )
+        }
+        c
+    }
+
+    pub fn color_at(&self, ray: Ray) -> Color {
+        let inters = self.intersect(ray);
+        if let Some(hit) = inters.hit() {
+            let comps = hit.prepare_computations(ray);
+            self.shade_hit(comps)
+        } else {
+            BLACK
+        }
+    }
 }
 
 pub fn default_world() -> World {
     let mut w = World::new();
-    w.add_object(Sphere::new().set_material(Material {
+    w.objects.push(Sphere::new().set_material(Material {
         color: Color::new(0.8, 1.0, 0.6),
         diffuse: 0.7,
         specular: 0.2,
         ..Default::default()
     }));
-    w.add_object(Sphere::new().set_transform(transformations::scaling(0.5, 0.5, 0.5)));
-    w.add_light(PointLight::new(
+    w.objects
+        .push(Sphere::new().set_transform(transformations::scaling(0.5, 0.5, 0.5)));
+    w.lights.push(PointLight::new(
         Point::new(-10.0, 10.0, -10.0),
         Color::new(1.0, 1.0, 1.0),
     ));
@@ -57,7 +74,7 @@ pub fn default_world() -> World {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tuple::Vector;
+    use crate::{intersection::Intersection, tuple::Vector};
     #[test]
     fn creating_world() {
         let w = World::new();
@@ -82,5 +99,54 @@ mod tests {
         assert_eq!(xs.0[1].t, 4.5);
         assert_eq!(xs.0[2].t, 5.5);
         assert_eq!(xs.0[3].t, 6.0);
+    }
+
+    #[test]
+    fn shading_an_intersection() {
+        let w = default_world();
+        let r = Ray::new(Point::new(0.0, 0.0, -5.0), Vector::new(0.0, 0.0, 1.0));
+        let shape = &w.objects[0];
+        let i = Intersection::new(4.0, shape);
+        let comps = i.prepare_computations(r);
+        let c = w.shade_hit(comps);
+        assert_eq!(c, Color::new(0.38066, 0.47583, 0.2855));
+    }
+    #[test]
+    fn shading_an_intersection_from_inside() {
+        let mut w = default_world();
+        w.lights = vec![PointLight::new(
+            Point::new(0.0, 0.25, 0.0),
+            Color::new(1.0, 1.0, 1.0),
+        )];
+        let r = Ray::new(Point::new(0.0, 0.0, 0.0), Vector::new(0.0, 0.0, 1.0));
+        let shape = &w.objects[1];
+        let i = Intersection::new(0.5, shape);
+        let comps = i.prepare_computations(r);
+        let c = w.shade_hit(comps);
+        assert_eq!(c, Color::new(0.90498, 0.90498, 0.90498));
+    }
+    #[test]
+    fn color_when_ray_misses() {
+        let w = default_world();
+        let r = Ray::new(Point::new(0.0, 0.0, -5.0), Vector::new(0.0, 1.0, 0.0));
+        let c = w.color_at(r);
+        assert_eq!(c, Color::new(0.0, 0.0, 0.0));
+    }
+    #[test]
+    fn color_when_ray_hits() {
+        let w = default_world();
+        let r = Ray::new(Point::new(0.0, 0.0, -5.0), Vector::new(0.0, 0.0, 1.0));
+        let c = w.color_at(r);
+        assert_eq!(c, Color::new(0.38066, 0.47583, 0.2855));
+    }
+    #[test]
+    fn color_with_intersection_behind_ray() {
+        let mut w = default_world();
+        w.objects[0].material.ambient = 1.0;
+        w.objects[1].material.ambient = 1.0;
+
+        let r = Ray::new(Point::new(0.0, 0.0, 0.75), Vector::new(0.0, 0.0, -1.0));
+        let c = w.color_at(r);
+        assert_eq!(c, w.objects[1].material.color);
     }
 }
