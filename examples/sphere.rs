@@ -4,7 +4,6 @@ use ray_tracer::light::PointLight;
 use ray_tracer::material::{lighting, Material};
 use ray_tracer::ray::Ray;
 use ray_tracer::sphere::Sphere;
-use ray_tracer::transformations;
 use ray_tracer::tuple::{Point, Vector};
 
 fn main() {

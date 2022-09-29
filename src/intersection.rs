@@ -16,8 +16,18 @@ impl<'a> Intersection<'a> {
 pub struct Intersections<'a>(pub Vec<Intersection<'a>>);
 
 impl<'a> Intersections<'a> {
-    pub fn new(xs: &[Intersection<'a>]) -> Intersections<'a> {
-        Intersections(xs.to_vec())
+    pub fn new() -> Intersections<'a> {
+        Intersections(Vec::new())
+    }
+
+    pub fn push(&mut self, intersection: Intersection<'a>) {
+        self.0.push(intersection);
+        self.0.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
+    }
+
+    pub fn concat(&mut self, mut other: Intersections<'a>) {
+        self.0.append(&mut other.0);
+        self.0.sort_by(|a, b| a.t.partial_cmp(&b.t).unwrap());
     }
 
     pub fn hit(&self) -> Option<Intersection> {
@@ -26,6 +36,12 @@ impl<'a> Intersections<'a> {
             .filter(|x| x.t >= 0.0)
             .reduce(|a, b| if a.t < b.t { a } else { b })
             .map(|x| x.clone())
+    }
+}
+
+impl<'a> From<Vec<Intersection<'a>>> for Intersections<'a> {
+    fn from(x: Vec<Intersection<'a>>) -> Intersections {
+        Intersections(x)
     }
 }
 
@@ -48,7 +64,7 @@ mod tests {
         let s = Sphere::new();
         let i1 = Intersection::new(1.0, &s);
         let i2 = Intersection::new(2.0, &s);
-        let xs = Intersections::new(&[i1, i2]);
+        let xs: Intersections = vec![i1, i2].into();
 
         assert_eq!(xs.0.len(), 2);
         assert_eq!(xs.0[0].object, &s);
@@ -70,7 +86,7 @@ mod tests {
         let s = Sphere::new();
         let i1 = Intersection::new(1.0, &s);
         let i2 = Intersection::new(2.0, &s);
-        let xs = Intersections::new(&[i1, i2]);
+        let xs: Intersections = vec![i1, i2].into();
         let hit = xs.hit();
         assert_eq!(hit, Some(i1));
     }
@@ -80,7 +96,7 @@ mod tests {
         let s = Sphere::new();
         let i1 = Intersection::new(-1.0, &s);
         let i2 = Intersection::new(2.0, &s);
-        let xs = Intersections::new(&[i1, i2]);
+        let xs: Intersections = vec![i1, i2].into();
         let hit = xs.hit();
         assert_eq!(hit, Some(i2));
     }
@@ -90,7 +106,7 @@ mod tests {
         let s = Sphere::new();
         let i1 = Intersection::new(-1.0, &s);
         let i2 = Intersection::new(-2.0, &s);
-        let xs = Intersections::new(&[i1, i2]);
+        let xs: Intersections = vec![i1, i2].into();
         let hit = xs.hit();
         assert_eq!(hit, None);
     }
@@ -102,7 +118,7 @@ mod tests {
         let i2 = Intersection::new(7.0, &s);
         let i3 = Intersection::new(-3.0, &s);
         let i4 = Intersection::new(2.0, &s);
-        let xs = Intersections::new(&[i1, i2, i3, i4]);
+        let xs: Intersections = vec![i1, i2, i3, i4].into();
         let hit = xs.hit();
         assert_eq!(hit, Some(i4));
     }

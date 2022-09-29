@@ -50,7 +50,7 @@ impl Sphere {
 
         let discriminant = b * b - 4.0 * a * c;
         if discriminant < 0.0 {
-            return Intersections::new(&[]);
+            return Intersections::new();
         }
 
         let t1 = (-b - discriminant.sqrt()) / (2.0 * a);
@@ -58,7 +58,7 @@ impl Sphere {
 
         let i1 = Intersection::new(t1, self);
         let i2 = Intersection::new(t2, self);
-        Intersections::new(&[i1, i2])
+        vec![i1, i2].into()
     }
 
     pub fn normal_at(&self, world_p: Point) -> Vector {
