@@ -1,16 +1,16 @@
 use crate::matrix;
-use crate::matrix::Matrix;
+use crate::matrix::Matrix4;
 use crate::tuple::{Point, Vector};
 
-pub fn translation(x: f64, y: f64, z: f64) -> Matrix {
+pub fn translation(x: f64, y: f64, z: f64) -> Matrix4 {
     matrix!([1, 0, 0, x], [0, 1, 0, y], [0, 0, 1, z], [0, 0, 0, 1])
 }
 
-pub fn scaling(x: f64, y: f64, z: f64) -> Matrix {
+pub fn scaling(x: f64, y: f64, z: f64) -> Matrix4 {
     matrix!([x, 0, 0, 0], [0, y, 0, 0], [0, 0, z, 0], [0, 0, 0, 1])
 }
 
-pub fn rotation_x(r: f64) -> Matrix {
+pub fn rotation_x(r: f64) -> Matrix4 {
     matrix!(
         [1.0, 0.0, 0.0, 0.0],
         [0.0, r.cos(), -r.sin(), 0.0],
@@ -19,7 +19,7 @@ pub fn rotation_x(r: f64) -> Matrix {
     )
 }
 
-pub fn rotation_y(r: f64) -> Matrix {
+pub fn rotation_y(r: f64) -> Matrix4 {
     matrix!(
         [r.cos(), 0.0, r.sin(), 0.0],
         [0.0, 1.0, 0.0, 0.0],
@@ -28,7 +28,7 @@ pub fn rotation_y(r: f64) -> Matrix {
     )
 }
 
-pub fn rotation_z(r: f64) -> Matrix {
+pub fn rotation_z(r: f64) -> Matrix4 {
     matrix!(
         [r.cos(), -r.sin(), 0.0, 0.0],
         [r.sin(), r.cos(), 0.0, 0.0],
@@ -37,7 +37,7 @@ pub fn rotation_z(r: f64) -> Matrix {
     )
 }
 
-pub fn shearing(x_y: f64, x_z: f64, y_x: f64, y_z: f64, z_x: f64, z_y: f64) -> Matrix {
+pub fn shearing(x_y: f64, x_z: f64, y_x: f64, y_z: f64, z_x: f64, z_y: f64) -> Matrix4 {
     matrix!(
         [1.0, x_y, x_z, 0.0],
         [y_x, 1.0, y_z, 0.0],
@@ -46,7 +46,7 @@ pub fn shearing(x_y: f64, x_z: f64, y_x: f64, y_z: f64, z_x: f64, z_y: f64) -> M
     )
 }
 
-pub fn view_transform(from: Point, to: Point, up: Vector) -> Matrix {
+pub fn view_transform(from: Point, to: Point, up: Vector) -> Matrix4 {
     let forward = (to - from).normalize();
     let left = forward.cross(up.normalize());
     let true_up = left.cross(forward);
@@ -279,7 +279,7 @@ mod tests {
         let up = Vector::new(0.0, 1.0, 0.0);
 
         let t = view_transform(from, to, up);
-        assert_eq!(t, Matrix::identity(4));
+        assert_eq!(t, Matrix4::identity(4));
     }
 
     #[test]

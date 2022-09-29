@@ -1,4 +1,4 @@
-use crate::matrix::Matrix;
+use crate::matrix::Matrix4;
 use crate::tuple::{Point, Tuple, Vector};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -18,7 +18,7 @@ impl Ray {
             .unwrap()
     }
 
-    pub fn transform(&self, m: &Matrix) -> Ray {
+    pub fn transform(&self, m: &Matrix4) -> Ray {
         Ray::new(
             (m * self.origin).try_into().unwrap(),
             (m * self.direction).try_into().unwrap(),

@@ -1,156 +1,151 @@
 use crate::tuple::Tuple;
 
+type MatrixData<const W: usize, const H: usize> = [[f64; W]; H];
+
 #[derive(Debug, Clone)]
-pub struct Matrix {
-    width: usize,
-    height: usize,
-    data: Vec<Vec<f64>>,
+pub struct Matrix<const W: usize, const H: usize> {
+    data: MatrixData<W, H>,
 }
 
-impl Matrix {
-    pub fn new(data: Vec<Vec<f64>>) -> Matrix {
-        let height = data.len();
-        let width = data[0].len();
-        Matrix {
-            data,
-            width,
-            height,
-        }
+pub type SquareMatrix<const D: usize> = Matrix<D, D>;
+pub type Matrix4 = SquareMatrix<4>;
+
+impl<const W: usize, const H: usize> Matrix<W, H> {
+    pub fn new(data: MatrixData<W, H>) -> Matrix<W, H> {
+        Matrix { data }
     }
 
     pub fn get(&self, x: usize, y: usize) -> f64 {
         self.data[x][y]
     }
 
-    pub fn identity(size: usize) -> Matrix {
-        let data = (0..size)
+    pub fn transpose(&self) -> Matrix<H, W> {
+        let data = (0..W)
+            .map(|x| {
+                (0..H)
+                    .map(|y| self.data[y][x])
+                    .collect::<Vec<_>>()
+                    .try_into()
+                    .unwrap()
+            })
+            .collect::<Vec<_>>();
+
+        Matrix::new(data.try_into().unwrap())
+    }
+}
+
+impl<const D: usize> SquareMatrix<D> {
+    pub fn identity(size: usize) -> SquareMatrix<D> {
+        let data = (0..D)
             .map(|y| {
                 (0..size)
                     .map(|x| if x == y { 1.0 } else { 0.0 })
                     .collect::<Vec<_>>()
+                    .try_into()
+                    .unwrap()
             })
             .collect::<Vec<_>>();
 
-        Matrix::new(data)
-    }
-
-    pub fn transpose(&self) -> Matrix {
-        let data = (0..self.width)
-            .map(|x| {
-                (0..self.height)
-                    .map(|y| self.data[y][x])
-                    .collect::<Vec<_>>()
-            })
-            .collect::<Vec<_>>();
-
-        Matrix::new(data)
-    }
-
-    pub fn determinant(&self) -> Result<f64, &'static str> {
-        if self.width != self.height {
-            return Err("not a square matrix");
-        }
-
-        if self.width == 2 {
-            Ok(self.data[0][0] * self.data[1][1] - self.data[0][1] * self.data[1][0])
-        } else {
-            let mut sum = 0.;
-            for i in 0..self.width {
-                sum += self.data[0][i] * self.cofactor(0, i).unwrap();
-            }
-            Ok(sum)
-        }
-    }
-
-    pub fn submatrix(&self, row: usize, col: usize) -> Result<Matrix, &'static str> {
-        if row >= self.height || col >= self.width {
-            return Err("invalid index");
-        }
-
-        let data = self
-            .data
-            .iter()
-            .enumerate()
-            .filter(|(i, _)| *i != row)
-            .map(|(_, v)| v)
-            .map(|row| {
-                row.iter()
-                    .enumerate()
-                    .filter(|(j, _)| *j != col)
-                    .map(|(_, v)| *v)
-                    .collect::<Vec<_>>()
-            })
-            .collect::<Vec<_>>();
-
-        Ok(Matrix::new(data))
-    }
-
-    pub fn minor(&self, row: usize, col: usize) -> Result<f64, &'static str> {
-        Ok(self.submatrix(row, col)?.determinant()?)
-    }
-
-    pub fn cofactor(&self, row: usize, col: usize) -> Result<f64, &'static str> {
-        Ok(self.minor(row, col)? * if (row + col) % 2 == 1 { -1. } else { 1. })
-    }
-
-    pub fn invertible(&self) -> bool {
-        if let Ok(det) = self.determinant() {
-            if det != 0. {
-                true
-            } else {
-                false
-            }
-        } else {
-            false
-        }
-    }
-
-    pub fn inverse(&self) -> Result<Matrix, &'static str> {
-        if !self.invertible() {
-            return Err("matrix not invertible");
-        }
-
-        let size = self.width;
-
-        let cofactors = Matrix::new(
-            (0..size)
-                .map(|y| {
-                    (0..size)
-                        .map(|x| self.cofactor(y, x).unwrap())
-                        .collect::<Vec<_>>()
-                })
-                .collect::<Vec<_>>(),
-        );
-
-        let det = self.determinant().unwrap();
-
-        Ok(cofactors.transpose() / det)
+        Matrix::new(data.try_into().unwrap())
     }
 }
+
+impl SquareMatrix<2> {
+    pub fn determinant(&self) -> f64 {
+        self.data[0][0] * self.data[1][1] - self.data[0][1] * self.data[1][0]
+    }
+}
+
+macro_rules! inverse_matrix_ops {
+    ($($D:literal)*) => ($(
+        impl SquareMatrix<$D> {
+            pub fn determinant(&self) -> f64 {
+                let mut sum = 0.;
+                for i in 0..$D {
+                    sum += self.data[0][i] * self.cofactor(0, i);
+                }
+                sum
+            }
+            pub fn submatrix(&self, row: usize, col: usize) -> SquareMatrix<{$D -1}> {
+                let data = self
+                    .data
+                    .iter()
+                    .enumerate()
+                    .filter(|(i, _)| *i != row)
+                    .map(|(_, v)| v)
+                    .map(|row| {
+                        row.iter()
+                            .enumerate()
+                            .filter(|(j, _)| *j != col)
+                            .map(|(_, v)| *v)
+                            .collect::<Vec<_>>()
+                            .try_into()
+                            .unwrap()
+                    })
+                    .collect::<Vec<_>>();
+
+                Matrix::new(data.try_into().unwrap())
+            }
+
+            pub fn minor(&self, row: usize, col: usize) -> f64 {
+                self.submatrix(row, col).determinant()
+            }
+
+            pub fn cofactor(&self, row: usize, col: usize) -> f64 {
+                self.minor(row, col) * if (row + col) % 2 == 1 { -1. } else { 1. }
+            }
+
+            pub fn invertible(&self) -> bool {
+                let det = self.determinant();
+                if det != 0. {
+                    true
+                } else {
+                    false
+                }
+            }
+
+            pub fn inverse(&self) -> Result<SquareMatrix<$D>, &'static str> {
+                if !self.invertible() {
+                    return Err("matrix not invertible");
+                }
+
+                let cofactors = Matrix::new(
+                    (0..$D)
+                        .map(|y| {
+                            (0..$D)
+                                .map(|x| self.cofactor(y, x))
+                                .collect::<Vec<_>>()
+                                .try_into()
+                                .unwrap()
+                        })
+                        .collect::<Vec<_>>()
+                        .try_into()
+                        .unwrap(),
+                );
+
+                let det = self.determinant();
+
+                Ok(cofactors.transpose() / det)
+            }
+        }
+    )*)
+}
+
+inverse_matrix_ops!( 4 3 );
 
 #[macro_export]
 macro_rules! matrix {
     ($([$($x:expr),+ $(,)?]),+ $(,)?) => {
-        {
-            let mut data = Vec::new();
-            $(
-                let mut row = Vec::new();
-                $(
-                    row.push($x as f64);
-                )*
-                data.push(row);
-            )*
-            $crate::matrix::Matrix::new(data)
-        }
+        $crate::matrix::Matrix::new([$(
+            [
+                $( $x as f64, )+
+            ],
+        )+])
     }
 }
 
-impl PartialEq for Matrix {
-    fn eq(&self, other: &Matrix) -> bool {
-        if self.width != other.width || self.height != other.height {
-            return false;
-        }
-
+impl<const W: usize, const H: usize> PartialEq for Matrix<W, H> {
+    fn eq(&self, other: &Matrix<W, H>) -> bool {
         for y in 0..self.data.len() {
             for x in 0..self.data[0].len() {
                 if (self.data[y][x] - other.data[y][x]).abs() > 0.00001 {
@@ -164,7 +159,7 @@ impl PartialEq for Matrix {
 
 use std::ops::Index;
 
-impl Index<(usize, usize)> for Matrix {
+impl<const W: usize, const H: usize> Index<(usize, usize)> for Matrix<W, H> {
     type Output = f64;
     fn index(&self, index: (usize, usize)) -> &f64 {
         let (x, y) = index;
@@ -174,63 +169,70 @@ impl Index<(usize, usize)> for Matrix {
 
 use std::ops::{Div, Mul};
 
-impl Mul for Matrix {
+impl<const W: usize, const H: usize, const L: usize> Mul<Matrix<H, L>> for Matrix<W, H> {
     // TODO: make matrix use references
-    type Output = Matrix;
+    type Output = Matrix<W, L>;
 
-    fn mul(self, rhs: Self) -> Matrix {
-        let width = rhs.width;
-        let height = self.height;
-
-        assert!(self.width == rhs.height);
+    fn mul(self, rhs: Matrix<H, L>) -> Self::Output {
+        let width = W;
+        let height = L;
 
         let data = (0..height)
             .map(|y| {
                 (0..width)
                     .map(|x| {
                         let mut sum: f64 = 0.0;
-                        for i in 0..self.width {
+                        for i in 0..W {
                             sum += self.data[y][i] * rhs.data[i][x];
                         }
                         sum
                     })
-                    .collect::<Vec<f64>>()
+                    .collect::<Vec<_>>()
+                    .try_into()
+                    .unwrap()
             })
-            .collect::<Vec<Vec<f64>>>();
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
 
-        Matrix::new(data)
+        Matrix::<W, L>::new(data)
     }
 }
 
-impl Mul<f64> for Matrix {
-    type Output = Matrix;
-    fn mul(self, rhs: f64) -> Matrix {
+impl<const W: usize, const H: usize> Mul<f64> for Matrix<W, H> {
+    type Output = Matrix<W, H>;
+    fn mul(self, rhs: f64) -> Self::Output {
         let data = self
             .data
             .iter()
-            .map(|row| row.iter().map(|x| x * rhs).collect::<Vec<_>>())
-            .collect::<Vec<_>>();
+            .map(|row| {
+                row.iter()
+                    .map(|x| x * rhs)
+                    .collect::<Vec<_>>()
+                    .try_into()
+                    .unwrap()
+            })
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap();
         Matrix::new(data)
     }
 }
 
-impl Div<f64> for Matrix {
-    type Output = Matrix;
-    fn div(self, rhs: f64) -> Matrix {
+impl<const W: usize, const H: usize> Div<f64> for Matrix<W, H> {
+    type Output = Matrix<W, H>;
+    fn div(self, rhs: f64) -> Self::Output {
         self * rhs.recip()
     }
 }
 
-impl<T> Mul<T> for &Matrix
+impl<T> Mul<T> for &SquareMatrix<4>
 where
     T: Into<Tuple>,
 {
     type Output = Tuple;
     fn mul(self, t: T) -> Tuple {
         let t = t.into();
-
-        assert_eq!(self.width, 4);
-        assert_eq!(self.height, 4);
 
         let data = (0..4)
             .map(|y| {
@@ -245,7 +247,7 @@ where
     }
 }
 
-impl<T> Mul<T> for Matrix
+impl<T> Mul<T> for SquareMatrix<4>
 where
     T: Into<Tuple>,
 {
@@ -260,11 +262,11 @@ mod tests {
     use super::*;
     #[test]
     fn construct_4x4_matrix() {
-        let m = Matrix::new(vec![
-            vec![1.0, 2.0, 3.0, 4.0],
-            vec![5.5, 6.5, 7.5, 8.5],
-            vec![9.0, 10., 11., 12.],
-            vec![13.5, 14.5, 15.5, 16.5],
+        let m = Matrix::new([
+            [1.0, 2.0, 3.0, 4.0],
+            [5.5, 6.5, 7.5, 8.5],
+            [9.0, 10., 11., 12.],
+            [13.5, 14.5, 15.5, 16.5],
         ]);
         assert_eq!(m[(0, 0)], 1.0);
         assert_eq!(m[(0, 3)], 4.0);
@@ -276,18 +278,14 @@ mod tests {
     }
     #[test]
     fn construct_3x3_matrix() {
-        let m = Matrix::new(vec![
-            vec![-3.0, 5.0, 0.0],
-            vec![1.0, -2.0, -7.0],
-            vec![0.0, 1.0, 1.0],
-        ]);
+        let m = Matrix::new([[-3.0, 5.0, 0.0], [1.0, -2.0, -7.0], [0.0, 1.0, 1.0]]);
         assert_eq!(m[(0, 0)], -3.0);
         assert_eq!(m[(1, 1)], -2.0);
         assert_eq!(m[(2, 2)], 1.0);
     }
     #[test]
     fn construxt_2x2_matrix() {
-        let m = Matrix::new(vec![vec![-3.0, 5.0], vec![1.0, -2.0]]);
+        let m = Matrix::new([[-3.0, 5.0], [1.0, -2.0]]);
         assert_eq!(m[(0, 0)], -3.0);
         assert_eq!(m[(0, 1)], 5.0);
         assert_eq!(m[(1, 0)], 1.0);
@@ -295,66 +293,66 @@ mod tests {
     }
     #[test]
     fn compare_similar_matrix() {
-        let a = Matrix::new(vec![
-            vec![1.0, 2.0, 3.0, 4.0],
-            vec![5.0, 6.0, 7.0, 8.0],
-            vec![9.0, 8.0, 7.0, 6.0],
-            vec![5.0, 4.0, 3.0, 2.0],
+        let a = Matrix::new([
+            [1.0, 2.0, 3.0, 4.0],
+            [5.0, 6.0, 7.0, 8.0],
+            [9.0, 8.0, 7.0, 6.0],
+            [5.0, 4.0, 3.0, 2.0],
         ]);
-        let b = Matrix::new(vec![
-            vec![1.0, 2.0, 3.0, 4.0],
-            vec![5.0, 6.0, 7.0, 8.0],
-            vec![9.0, 8.0, 7.0, 6.0],
-            vec![5.0, 4.0, 3.0, 2.0],
+        let b = Matrix::new([
+            [1.0, 2.0, 3.0, 4.0],
+            [5.0, 6.0, 7.0, 8.0],
+            [9.0, 8.0, 7.0, 6.0],
+            [5.0, 4.0, 3.0, 2.0],
         ]);
         assert_eq!(a, b);
     }
     #[test]
     fn compare_disimilar_matrix() {
-        let a = Matrix::new(vec![
-            vec![1.0, 2.0, 3.0, 4.0],
-            vec![5.0, 6.0, 7.0, 8.0],
-            vec![9.0, 8.0, 7.0, 6.0],
-            vec![5.0, 4.0, 3.0, 2.0],
+        let a = Matrix::new([
+            [1.0, 2.0, 3.0, 4.0],
+            [5.0, 6.0, 7.0, 8.0],
+            [9.0, 8.0, 7.0, 6.0],
+            [5.0, 4.0, 3.0, 2.0],
         ]);
-        let b = Matrix::new(vec![
-            vec![2.0, 3.0, 4.0, 5.0],
-            vec![6.0, 7.0, 8.0, 9.0],
-            vec![8.0, 7.0, 6.0, 5.0],
-            vec![4.0, 3.0, 2.0, 1.0],
+        let b = Matrix::new([
+            [2.0, 3.0, 4.0, 5.0],
+            [6.0, 7.0, 8.0, 9.0],
+            [8.0, 7.0, 6.0, 5.0],
+            [4.0, 3.0, 2.0, 1.0],
         ]);
         assert_ne!(a, b);
     }
     #[test]
     fn multiply_two_matrices() {
-        let a = Matrix::new(vec![
-            vec![1.0, 2.0, 3.0, 4.0],
-            vec![5.0, 6.0, 7.0, 8.0],
-            vec![9.0, 8.0, 7.0, 6.0],
-            vec![5.0, 4.0, 3.0, 2.0],
+        let a = Matrix::new([
+            [1.0, 2.0, 3.0, 4.0],
+            [5.0, 6.0, 7.0, 8.0],
+            [9.0, 8.0, 7.0, 6.0],
+            [5.0, 4.0, 3.0, 2.0],
         ]);
-        let b = Matrix::new(vec![
-            vec![-2.0, 1.0, 2.0, 3.0],
-            vec![3.0, 2.0, 1.0, -1.0],
-            vec![4.0, 3.0, 6.0, 5.0],
-            vec![1.0, 2.0, 7.0, 8.0],
+        let b = Matrix::new([
+            [-2.0, 1.0, 2.0, 3.0],
+            [3.0, 2.0, 1.0, -1.0],
+            [4.0, 3.0, 6.0, 5.0],
+            [1.0, 2.0, 7.0, 8.0],
         ]);
-        let result = Matrix::new(vec![
-            vec![20.0, 22.0, 50.0, 48.0],
-            vec![44.0, 54.0, 114.0, 108.0],
-            vec![40.0, 58.0, 110.0, 102.0],
-            vec![16.0, 26.0, 46.0, 42.0],
+        let result = Matrix::new([
+            [20.0, 22.0, 50.0, 48.0],
+            [44.0, 54.0, 114.0, 108.0],
+            [40.0, 58.0, 110.0, 102.0],
+            [16.0, 26.0, 46.0, 42.0],
         ]);
 
         assert_eq!(a * b, result);
     }
     #[test]
     fn multiply_matrix_by_tuple() {
-        let a = Matrix::new(vec![
-            vec![1.0, 2.0, 3.0, 4.0],
-            vec![2.0, 4.0, 4.0, 2.0],
-            vec![8.0, 6.0, 4.0, 1.0],
-            vec![0.0, 0.0, 0.0, 1.0],
+        let a = Matrix::new([
+            [1.0, 2.0, 3.0, 4.0],
+            [2.0, 4.0, 4.0, 2.0],
+            [8.0, 6.0, 4.0, 1.0],
+            [0.0, 0.0, 0.0, 1.0],
         ]);
 
         let b = Tuple::new(1.0, 2.0, 3.0, 1.0);
@@ -364,11 +362,11 @@ mod tests {
     }
     #[test]
     fn multiply_matrix_by_identity() {
-        let a = Matrix::new(vec![
-            vec![0.0, 1.0, 2.0, 4.0],
-            vec![1.0, 2.0, 4.0, 8.0],
-            vec![2.0, 4.0, 8.0, 16.0],
-            vec![4.0, 8.0, 16.0, 32.0],
+        let a = Matrix::new([
+            [0.0, 1.0, 2.0, 4.0],
+            [1.0, 2.0, 4.0, 8.0],
+            [2.0, 4.0, 8.0, 16.0],
+            [4.0, 8.0, 16.0, 32.0],
         ]);
 
         assert_eq!(a.clone() * Matrix::identity(4), a);
@@ -383,20 +381,20 @@ mod tests {
 
     #[test]
     fn transpose_identity_matrix() {
-        let a = Matrix::identity(4);
+        let a = SquareMatrix::<4>::identity(4);
         assert_eq!(a.transpose(), a);
     }
 
     #[test]
     fn determinant_2x2_matrix() {
         let a = matrix!([1, 5], [-3, 2]);
-        assert_eq!(a.determinant().unwrap(), 17.);
+        assert_eq!(a.determinant(), 17.);
     }
 
     #[test]
     fn submatrix_of_3x3_matrix() {
         let a = matrix!([1, 5, 0], [-3, 2, 7], [0, 6, -3]);
-        assert_eq!(a.submatrix(0, 2).unwrap(), matrix!([-3, 2], [0, 6]));
+        assert_eq!(a.submatrix(0, 2), matrix!([-3, 2], [0, 6]));
     }
 
     #[test]
@@ -404,57 +402,57 @@ mod tests {
         let a = matrix!([-6, 1, 1, 6], [-8, 5, 8, 6], [-1, 0, 8, 2], [-7, 1, -1, 1]);
         let b = matrix!([-6, 1, 6], [-8, 8, 6], [-7, -1, 1]);
 
-        assert_eq!(a.submatrix(2, 1).unwrap(), b);
+        assert_eq!(a.submatrix(2, 1), b);
     }
 
     #[test]
     fn calculate_minor_of_3x3_matrix() {
         let a = matrix!([3, 5, 0], [2, -1, 7], [6, -1, 5]);
-        let b = a.submatrix(1, 0).unwrap();
-        assert_eq!(b.determinant().unwrap(), 25.);
-        assert_eq!(a.minor(1, 0).unwrap(), 25.);
+        let b = a.submatrix(1, 0);
+        assert_eq!(b.determinant(), 25.);
+        assert_eq!(a.minor(1, 0), 25.);
     }
 
     #[test]
     fn calculate_cofactor_of_3x3_matrix() {
         let a = matrix!([3, 5, 0], [2, -1, -7], [6, -1, 5]);
 
-        assert_eq!(a.minor(0, 0).unwrap(), -12.);
-        assert_eq!(a.cofactor(0, 0).unwrap(), -12.);
-        assert_eq!(a.minor(1, 0).unwrap(), 25.);
-        assert_eq!(a.cofactor(1, 0).unwrap(), -25.);
+        assert_eq!(a.minor(0, 0), -12.);
+        assert_eq!(a.cofactor(0, 0), -12.);
+        assert_eq!(a.minor(1, 0), 25.);
+        assert_eq!(a.cofactor(1, 0), -25.);
     }
 
     #[test]
     fn determinant_3x3_matrix() {
         let a = matrix!([1, 2, 6], [-5, 8, -4], [2, 6, 4]);
-        assert_eq!(a.cofactor(0, 0).unwrap(), 56.);
-        assert_eq!(a.cofactor(0, 1).unwrap(), 12.);
-        assert_eq!(a.cofactor(0, 2).unwrap(), -46.);
-        assert_eq!(a.determinant().unwrap(), -196.);
+        assert_eq!(a.cofactor(0, 0), 56.);
+        assert_eq!(a.cofactor(0, 1), 12.);
+        assert_eq!(a.cofactor(0, 2), -46.);
+        assert_eq!(a.determinant(), -196.);
     }
 
     #[test]
     fn determinant_4x4_matrix() {
         let a = matrix!([-2, -8, 3, 5], [-3, 1, 7, 3], [1, 2, -9, 6], [-6, 7, 7, -9]);
-        assert_eq!(a.cofactor(0, 0).unwrap(), 690.);
-        assert_eq!(a.cofactor(0, 1).unwrap(), 447.);
-        assert_eq!(a.cofactor(0, 2).unwrap(), 210.);
-        assert_eq!(a.cofactor(0, 3).unwrap(), 51.);
-        assert_eq!(a.determinant().unwrap(), -4071.);
+        assert_eq!(a.cofactor(0, 0), 690.);
+        assert_eq!(a.cofactor(0, 1), 447.);
+        assert_eq!(a.cofactor(0, 2), 210.);
+        assert_eq!(a.cofactor(0, 3), 51.);
+        assert_eq!(a.determinant(), -4071.);
     }
 
     #[test]
     fn test_invertible_matrix_invertibility() {
         let a = matrix!([6, 4, 4, 4], [5, 5, 7, 6], [4, -9, 3, -7], [9, 1, 7, -6]);
-        assert_eq!(a.determinant().unwrap(), -2120.);
+        assert_eq!(a.determinant(), -2120.);
         assert!(a.invertible());
     }
 
     #[test]
     fn test_noninvertible_matrix_invertibility() {
         let a = matrix!([-4, 2, -2, -3], [9, 6, 2, 6], [0, -5, 1, -5], [0, 0, 0, 0]);
-        assert_eq!(a.determinant().unwrap(), 0.);
+        assert_eq!(a.determinant(), 0.);
         assert!(!a.invertible());
     }
 
@@ -464,10 +462,10 @@ mod tests {
         let a = matrix!([-5, 2, 6, -8], [1, -5, 1, 8], [7, 7, -6, -7], [1, -3, 7, 4]);
         let b = a.inverse().unwrap();
 
-        assert_eq!(a.determinant().unwrap(), 532.);
-        assert_eq!(a.cofactor(2, 3).unwrap(), -160.);
+        assert_eq!(a.determinant(), 532.);
+        assert_eq!(a.cofactor(2, 3), -160.);
         assert_eq!(b.get(3, 2), -160. / 532.);
-        assert_eq!(a.cofactor(3, 2).unwrap(), 105.);
+        assert_eq!(a.cofactor(3, 2), 105.);
         assert_eq!(b.get(2, 3), 105. / 532.);
 
         assert_eq!(
