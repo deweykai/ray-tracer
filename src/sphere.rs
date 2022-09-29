@@ -9,6 +9,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 pub struct Sphere {
     id: u32,
     pub transform: Matrix,
+    pub inv_transform: Matrix,
     pub material: Material,
 }
 
@@ -18,11 +19,15 @@ impl Sphere {
         Sphere {
             id: COUNT.fetch_add(1, Ordering::Relaxed),
             transform: Matrix::identity(4),
+            inv_transform: Matrix::identity(4),
             material: Default::default(),
         }
     }
 
     pub fn set_transform(mut self, transform: Matrix) -> Sphere {
+        self.inv_transform = transform
+            .inverse()
+            .expect("Fail to inverse sphere transform");
         self.transform = transform;
         self
     }
@@ -33,12 +38,7 @@ impl Sphere {
     }
 
     pub fn intersect(&self, ray: Ray) -> Intersections {
-        let ray = ray.transform(
-            &self
-                .transform
-                .inverse()
-                .expect("could not inverse ray transform"),
-        );
+        let ray = ray.transform(&self.inv_transform);
         let origin = ray.origin;
         let direction = ray.direction;
 
@@ -62,20 +62,11 @@ impl Sphere {
     }
 
     pub fn normal_at(&self, world_p: Point) -> Vector {
-        let object_p = &self
-            .transform
-            .inverse()
-            .expect("failed to inverse sphere transform")
-            * world_p;
+        let object_p = &self.inv_transform * world_p;
 
         let object_normal = Point::try_from(object_p).unwrap() - Point::new(0.0, 0.0, 0.0);
 
-        let mut world_normal = self
-            .transform
-            .inverse()
-            .expect("failed to inverse sphere transform")
-            .transpose()
-            * object_normal;
+        let mut world_normal = &self.inv_transform * object_normal;
         // something something about multiplying by the inverse
         // of 3x3 submatrix of transform which can be skipped by
         // setting w to 0.
