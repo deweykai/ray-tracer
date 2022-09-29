@@ -57,12 +57,12 @@ impl Canvas {
                 (0..self.width)
                     .map(|x| self.read_pixel(x, y).unwrap())
                     .map(|p| p.to_string())
-                    .reduce(|acc, s| acc + " " + &s)
-                    .unwrap()
+                    .collect::<Vec<_>>()
+                    .join(" ")
             })
             .map(line_wrap)
-            .reduce(|acc, s| acc + "\n" + &s)
-            .unwrap();
+            .collect::<Vec<_>>()
+            .join("\n");
         format!("{}\n{}\n", header, body)
     }
 }
