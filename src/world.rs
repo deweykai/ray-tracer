@@ -2,12 +2,10 @@ use crate::color::{Color, BLACK};
 use crate::intersection::{Computations, Intersections};
 use crate::light::PointLight;
 use crate::material::{lighting, Material};
-use crate::matrix;
-use crate::matrix::Matrix;
 use crate::ray::Ray;
 use crate::sphere::Sphere;
 use crate::transformations;
-use crate::tuple::{Point, Vector};
+use crate::tuple::Point;
 
 pub struct World {
     pub objects: Vec<Sphere>,
@@ -55,21 +53,6 @@ impl World {
     }
 }
 
-fn view_transform(from: Point, to: Point, up: Vector) -> Matrix {
-    let forward = (to - from).normalize();
-    let left = forward.cross(up.normalize());
-    let true_up = left.cross(forward);
-
-    let orientation = matrix![
-        [left.0.x, left.0.y, left.0.z, 0.0],
-        [true_up.0.x, true_up.0.y, true_up.0.z, 0.0],
-        [-forward.0.x, -forward.0.y, -forward.0.z, 0.0],
-        [0.0, 0.0, 0.0, 1.0],
-    ];
-
-    orientation * transformations::translation(-from.0.x, -from.0.y, -from.0.z)
-}
-
 pub fn default_world() -> World {
     let mut w = World::new();
     w.objects.push(Sphere::new().set_material(Material {
@@ -91,7 +74,7 @@ pub fn default_world() -> World {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{intersection::Intersection, matrix, tuple::Vector};
+    use crate::{intersection::Intersection, tuple::Vector};
     #[test]
     fn creating_world() {
         let w = World::new();
@@ -165,52 +148,5 @@ mod tests {
         let r = Ray::new(Point::new(0.0, 0.0, 0.75), Vector::new(0.0, 0.0, -1.0));
         let c = w.color_at(r);
         assert_eq!(c, w.objects[1].material.color);
-    }
-    #[test]
-    fn transformation_matrix_for_default_orientation() {
-        let from = Point::new(0.0, 0.0, 0.0);
-        let to = Point::new(0.0, 0.0, -1.0);
-        let up = Vector::new(0.0, 1.0, 0.0);
-
-        let t = view_transform(from, to, up);
-        assert_eq!(t, Matrix::identity(4));
-    }
-
-    #[test]
-    fn transformation_matrix_looking_in_positive_z_direction() {
-        let from = Point::new(0.0, 0.0, 0.0);
-        let to = Point::new(0.0, 0.0, 1.0);
-        let up = Vector::new(0.0, 1.0, 0.0);
-
-        let t = view_transform(from, to, up);
-        assert_eq!(t, transformations::scaling(-1.0, 1.0, -1.0));
-    }
-
-    #[test]
-    fn view_transformation_moves_the_world() {
-        let from = Point::new(0.0, 0.0, 8.0);
-        let to = Point::new(0.0, 0.0, 0.0);
-        let up = Vector::new(0.0, 1.0, 0.0);
-
-        let t = view_transform(from, to, up);
-        assert_eq!(t, transformations::translation(0.0, 0.0, -8.0));
-    }
-
-    #[test]
-    fn arbitrary_view_transformation() {
-        let from = Point::new(1.0, 3.0, 2.0);
-        let to = Point::new(4.0, -2.0, 8.0);
-        let up = Vector::new(1.0, 1.0, 0.0);
-
-        let t = view_transform(from, to, up);
-        assert_eq!(
-            t,
-            matrix![
-                [-0.50709, 0.50709, 0.67612, -2.36643],
-                [0.76772, 0.60609, 0.12122, -2.82843],
-                [-0.35857, 0.59761, -0.71714, 0.00000],
-                [0.00000, 0.00000, 0.00000, 1.00000],
-            ]
-        )
     }
 }
