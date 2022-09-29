@@ -1,5 +1,5 @@
 use crate::canvas::Canvas;
-use crate::matrix::Matrix;
+use crate::matrix::Matrix4;
 use crate::ray::Ray;
 use crate::tuple::Point;
 use crate::world::World;
@@ -14,8 +14,8 @@ pub struct Camera {
     half_width: f64,
     half_height: f64,
     pixel_size: f64,
-    transform: Matrix,
-    inv_transform: Matrix,
+    transform: Matrix4,
+    inv_transform: Matrix4,
 }
 
 impl Camera {
@@ -36,12 +36,12 @@ impl Camera {
             half_height,
             half_width,
             pixel_size,
-            transform: Matrix::identity(4),
-            inv_transform: Matrix::identity(4),
+            transform: Matrix4::identity(4),
+            inv_transform: Matrix4::identity(4),
         }
     }
 
-    pub fn set_transform(&mut self, transform: Matrix) {
+    pub fn set_transform(&mut self, transform: Matrix4) {
         self.inv_transform = transform.inverse().expect("Fail to inverse camera matrix");
         self.transform = transform;
     }

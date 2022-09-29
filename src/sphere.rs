@@ -1,6 +1,6 @@
 use crate::intersection::{Intersection, Intersections};
 use crate::material::Material;
-use crate::matrix::Matrix;
+use crate::matrix::Matrix4;
 use crate::ray::Ray;
 use crate::tuple::{Point, Vector};
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -8,8 +8,8 @@ use std::sync::atomic::{AtomicU32, Ordering};
 #[derive(Debug, PartialEq)]
 pub struct Sphere {
     id: u32,
-    pub transform: Matrix,
-    pub inv_transform: Matrix,
+    pub transform: Matrix4,
+    pub inv_transform: Matrix4,
     pub material: Material,
 }
 
@@ -18,13 +18,13 @@ impl Sphere {
         static COUNT: AtomicU32 = AtomicU32::new(0);
         Sphere {
             id: COUNT.fetch_add(1, Ordering::Relaxed),
-            transform: Matrix::identity(4),
-            inv_transform: Matrix::identity(4),
+            transform: Matrix4::identity(4),
+            inv_transform: Matrix4::identity(4),
             material: Default::default(),
         }
     }
 
-    pub fn set_transform(mut self, transform: Matrix) -> Sphere {
+    pub fn set_transform(mut self, transform: Matrix4) -> Sphere {
         self.inv_transform = transform
             .inverse()
             .expect("Fail to inverse sphere transform");
@@ -128,7 +128,7 @@ mod tests {
     #[test]
     fn sphere_default_transformation() {
         let s = Sphere::new();
-        assert_eq!(s.transform, Matrix::identity(4));
+        assert_eq!(s.transform, Matrix4::identity(4));
     }
 
     #[test]
