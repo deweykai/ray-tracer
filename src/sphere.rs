@@ -66,7 +66,7 @@ impl Sphere {
 
         let object_normal = Point::try_from(object_p).unwrap() - Point::new(0.0, 0.0, 0.0);
 
-        let mut world_normal = &self.inv_transform * object_normal;
+        let mut world_normal = &self.inv_transform.transpose() * object_normal;
         // something something about multiplying by the inverse
         // of 3x3 submatrix of transform which can be skipped by
         // setting w to 0.
