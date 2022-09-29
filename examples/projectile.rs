@@ -40,7 +40,7 @@ fn main() {
     loop {
         p = p.tick(&e);
         let height = c.height;
-        c = c.write_pixel(
+        c.write_pixel(
             p.pos.x as isize,
             height - p.pos.y as isize,
             Color::new(0.7, 0.0, 0.0),

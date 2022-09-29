@@ -37,7 +37,7 @@ fn main() {
                 let normal = hit.object.normal_at(point);
                 let eye: Vector = -r.direction;
                 let color = lighting(hit.object.material, light, point, eye, normal);
-                canv = canv.write_pixel(x, y, color);
+                canv.write_pixel(x, y, color);
             }
         }
     }

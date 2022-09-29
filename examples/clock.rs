@@ -20,7 +20,7 @@ fn main() {
 
         let p2 = t * p;
 
-        canv = canv.write_pixel(p2.x as isize, p2.y as isize, Color::new(1.0, 1.0, 1.0));
+        canv.write_pixel(p2.x as isize, p2.y as isize, Color::new(1.0, 1.0, 1.0));
     }
 
     println!("{}", canv.to_ppm());
