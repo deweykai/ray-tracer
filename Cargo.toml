@@ -9,3 +9,4 @@ edition = "2021"
 debug = 1
 
 [dependencies]
+crossbeam = "0.8.2"
