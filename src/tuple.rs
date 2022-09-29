@@ -113,7 +113,7 @@ impl Div<f64> for Tuple {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Vector(Tuple);
+pub struct Vector(pub Tuple);
 
 impl Vector {
     pub fn new(x: f64, y: f64, z: f64) -> Vector {
@@ -188,7 +188,7 @@ impl TryFrom<Tuple> for Vector {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Point(Tuple);
+pub struct Point(pub Tuple);
 impl Point {
     pub fn new(x: f64, y: f64, z: f64) -> Point {
         Point(Tuple::new(x, y, z, 1.0))

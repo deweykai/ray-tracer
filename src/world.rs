@@ -2,6 +2,7 @@ use crate::color::{Color, BLACK};
 use crate::intersection::{Computations, Intersections};
 use crate::light::PointLight;
 use crate::material::{lighting, Material};
+use crate::matrix;
 use crate::matrix::Matrix;
 use crate::ray::Ray;
 use crate::sphere::Sphere;
@@ -57,8 +58,16 @@ impl World {
 fn view_transform(from: Point, to: Point, up: Vector) -> Matrix {
     let forward = (to - from).normalize();
     let left = forward.cross(up.normalize());
+    let true_up = left.cross(forward);
 
-    Matrix::identity(4)
+    let orientation = matrix![
+        [left.0.x, left.0.y, left.0.z, 0.0],
+        [true_up.0.x, true_up.0.y, true_up.0.z, 0.0],
+        [-forward.0.x, -forward.0.y, -forward.0.z, 0.0],
+        [0.0, 0.0, 0.0, 1.0],
+    ];
+
+    orientation * transformations::translation(-from.0.x, -from.0.y, -from.0.z)
 }
 
 pub fn default_world() -> World {
@@ -174,7 +183,7 @@ mod tests {
         let up = Vector::new(0.0, 1.0, 0.0);
 
         let t = view_transform(from, to, up);
-        assert_eq!(t, transformations::scaling(-1.0, -1.0, -1.0));
+        assert_eq!(t, transformations::scaling(-1.0, 1.0, -1.0));
     }
 
     #[test]
@@ -198,7 +207,7 @@ mod tests {
             t,
             matrix![
                 [-0.50709, 0.50709, 0.67612, -2.36643],
-                [0.76722, 0.60609, 0.12122, -2.82843],
+                [0.76772, 0.60609, 0.12122, -2.82843],
                 [-0.35857, 0.59761, -0.71714, 0.00000],
                 [0.00000, 0.00000, 0.00000, 1.00000],
             ]
