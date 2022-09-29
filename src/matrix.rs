@@ -1,10 +1,11 @@
 use crate::tuple::Tuple;
 
 type MatrixData<const W: usize, const H: usize> = [[f64; W]; H];
+type MatrixVecData = Vec<Vec<f64>>;
 
 #[derive(Debug, Clone)]
 pub struct Matrix<const W: usize, const H: usize> {
-    data: MatrixData<W, H>,
+    data: MatrixVecData,
 }
 
 pub type SquareMatrix<const D: usize> = Matrix<D, D>;
@@ -12,6 +13,12 @@ pub type Matrix4 = SquareMatrix<4>;
 
 impl<const W: usize, const H: usize> Matrix<W, H> {
     pub fn new(data: MatrixData<W, H>) -> Matrix<W, H> {
+        Matrix {
+            data: data.iter().map(|row| row.to_vec()).collect(),
+        }
+    }
+
+    fn from_vec(data: MatrixVecData) -> Matrix<W, H> {
         Matrix { data }
     }
 
@@ -21,32 +28,24 @@ impl<const W: usize, const H: usize> Matrix<W, H> {
 
     pub fn transpose(&self) -> Matrix<H, W> {
         let data = (0..W)
-            .map(|x| {
-                (0..H)
-                    .map(|y| self.data[y][x])
-                    .collect::<Vec<_>>()
-                    .try_into()
-                    .unwrap()
-            })
+            .map(|x| (0..H).map(|y| self.data[y][x]).collect::<Vec<_>>())
             .collect::<Vec<_>>();
 
-        Matrix::new(data.try_into().unwrap())
+        Matrix::from_vec(data)
     }
 }
 
 impl<const D: usize> SquareMatrix<D> {
-    pub fn identity(size: usize) -> SquareMatrix<D> {
+    pub fn identity(_: usize) -> SquareMatrix<D> {
         let data = (0..D)
             .map(|y| {
-                (0..size)
+                (0..D)
                     .map(|x| if x == y { 1.0 } else { 0.0 })
                     .collect::<Vec<_>>()
-                    .try_into()
-                    .unwrap()
             })
             .collect::<Vec<_>>();
 
-        Matrix::new(data.try_into().unwrap())
+        Matrix::from_vec(data)
     }
 }
 
@@ -79,12 +78,10 @@ macro_rules! inverse_matrix_ops {
                             .filter(|(j, _)| *j != col)
                             .map(|(_, v)| *v)
                             .collect::<Vec<_>>()
-                            .try_into()
-                            .unwrap()
                     })
                     .collect::<Vec<_>>();
 
-                Matrix::new(data.try_into().unwrap())
+                Matrix::from_vec(data)
             }
 
             pub fn minor(&self, row: usize, col: usize) -> f64 {
@@ -109,18 +106,14 @@ macro_rules! inverse_matrix_ops {
                     return Err("matrix not invertible");
                 }
 
-                let cofactors = Matrix::new(
+                let cofactors = Matrix::from_vec(
                     (0..$D)
                         .map(|y| {
                             (0..$D)
                                 .map(|x| self.cofactor(y, x))
                                 .collect::<Vec<_>>()
-                                .try_into()
-                                .unwrap()
                         })
                         .collect::<Vec<_>>()
-                        .try_into()
-                        .unwrap(),
                 );
 
                 let det = self.determinant();
@@ -205,17 +198,9 @@ impl<const W: usize, const H: usize> Mul<f64> for Matrix<W, H> {
         let data = self
             .data
             .iter()
-            .map(|row| {
-                row.iter()
-                    .map(|x| x * rhs)
-                    .collect::<Vec<_>>()
-                    .try_into()
-                    .unwrap()
-            })
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
-        Matrix::new(data)
+            .map(|row| row.iter().map(|x| x * rhs).collect::<Vec<_>>())
+            .collect::<Vec<_>>();
+        Matrix::from_vec(data)
     }
 }
 
@@ -262,12 +247,12 @@ mod tests {
     use super::*;
     #[test]
     fn construct_4x4_matrix() {
-        let m = Matrix::new([
+        let m = matrix![
             [1.0, 2.0, 3.0, 4.0],
             [5.5, 6.5, 7.5, 8.5],
             [9.0, 10., 11., 12.],
             [13.5, 14.5, 15.5, 16.5],
-        ]);
+        ];
         assert_eq!(m[(0, 0)], 1.0);
         assert_eq!(m[(0, 3)], 4.0);
         assert_eq!(m[(1, 0)], 5.5);
@@ -278,14 +263,14 @@ mod tests {
     }
     #[test]
     fn construct_3x3_matrix() {
-        let m = Matrix::new([[-3.0, 5.0, 0.0], [1.0, -2.0, -7.0], [0.0, 1.0, 1.0]]);
+        let m = matrix![[-3.0, 5.0, 0.0], [1.0, -2.0, -7.0], [0.0, 1.0, 1.0]];
         assert_eq!(m[(0, 0)], -3.0);
         assert_eq!(m[(1, 1)], -2.0);
         assert_eq!(m[(2, 2)], 1.0);
     }
     #[test]
     fn construxt_2x2_matrix() {
-        let m = Matrix::new([[-3.0, 5.0], [1.0, -2.0]]);
+        let m = matrix![[-3.0, 5.0], [1.0, -2.0]];
         assert_eq!(m[(0, 0)], -3.0);
         assert_eq!(m[(0, 1)], 5.0);
         assert_eq!(m[(1, 0)], 1.0);
@@ -293,67 +278,67 @@ mod tests {
     }
     #[test]
     fn compare_similar_matrix() {
-        let a = Matrix::new([
+        let a = matrix![
             [1.0, 2.0, 3.0, 4.0],
             [5.0, 6.0, 7.0, 8.0],
             [9.0, 8.0, 7.0, 6.0],
             [5.0, 4.0, 3.0, 2.0],
-        ]);
-        let b = Matrix::new([
+        ];
+        let b = matrix![
             [1.0, 2.0, 3.0, 4.0],
             [5.0, 6.0, 7.0, 8.0],
             [9.0, 8.0, 7.0, 6.0],
             [5.0, 4.0, 3.0, 2.0],
-        ]);
+        ];
         assert_eq!(a, b);
     }
     #[test]
     fn compare_disimilar_matrix() {
-        let a = Matrix::new([
+        let a = matrix![
             [1.0, 2.0, 3.0, 4.0],
             [5.0, 6.0, 7.0, 8.0],
             [9.0, 8.0, 7.0, 6.0],
             [5.0, 4.0, 3.0, 2.0],
-        ]);
-        let b = Matrix::new([
+        ];
+        let b = matrix![
             [2.0, 3.0, 4.0, 5.0],
             [6.0, 7.0, 8.0, 9.0],
             [8.0, 7.0, 6.0, 5.0],
             [4.0, 3.0, 2.0, 1.0],
-        ]);
+        ];
         assert_ne!(a, b);
     }
     #[test]
     fn multiply_two_matrices() {
-        let a = Matrix::new([
+        let a = matrix![
             [1.0, 2.0, 3.0, 4.0],
             [5.0, 6.0, 7.0, 8.0],
             [9.0, 8.0, 7.0, 6.0],
             [5.0, 4.0, 3.0, 2.0],
-        ]);
-        let b = Matrix::new([
+        ];
+        let b = matrix![
             [-2.0, 1.0, 2.0, 3.0],
             [3.0, 2.0, 1.0, -1.0],
             [4.0, 3.0, 6.0, 5.0],
             [1.0, 2.0, 7.0, 8.0],
-        ]);
-        let result = Matrix::new([
+        ];
+        let result = matrix![
             [20.0, 22.0, 50.0, 48.0],
             [44.0, 54.0, 114.0, 108.0],
             [40.0, 58.0, 110.0, 102.0],
             [16.0, 26.0, 46.0, 42.0],
-        ]);
+        ];
 
         assert_eq!(a * b, result);
     }
     #[test]
     fn multiply_matrix_by_tuple() {
-        let a = Matrix::new([
+        let a = matrix![
             [1.0, 2.0, 3.0, 4.0],
             [2.0, 4.0, 4.0, 2.0],
             [8.0, 6.0, 4.0, 1.0],
             [0.0, 0.0, 0.0, 1.0],
-        ]);
+        ];
 
         let b = Tuple::new(1.0, 2.0, 3.0, 1.0);
         let result = Tuple::new(18.0, 24.0, 33.0, 1.0);
@@ -362,12 +347,12 @@ mod tests {
     }
     #[test]
     fn multiply_matrix_by_identity() {
-        let a = Matrix::new([
+        let a = matrix![
             [0.0, 1.0, 2.0, 4.0],
             [1.0, 2.0, 4.0, 8.0],
             [2.0, 4.0, 8.0, 16.0],
             [4.0, 8.0, 16.0, 32.0],
-        ]);
+        ];
 
         assert_eq!(a.clone() * Matrix::identity(4), a);
     }

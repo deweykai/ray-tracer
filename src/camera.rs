@@ -3,6 +3,7 @@ use crate::matrix::Matrix4;
 use crate::ray::Ray;
 use crate::tuple::Point;
 use crate::world::World;
+use rayon::prelude::*;
 
 pub struct Camera {
     hsize: u32,
@@ -66,13 +67,17 @@ impl Camera {
     pub fn render(&self, world: &World) -> Canvas {
         let mut image = Canvas::new(self.hsize as isize, self.vsize as isize);
 
-        for y in 0..self.vsize {
-            for x in 0..self.hsize {
-                let ray = self.ray_for_pixel(x, y);
-                let color = world.color_at(ray);
-                image = image.write_pixel(x as isize, y as isize, color);
-            }
-        }
+        (0..self.vsize)
+            .into_par_iter()
+            .flat_map(|y| (0..self.hsize).into_par_iter().map(move |x| (x, y)))
+            .map(|(x, y)| (x, y, self.ray_for_pixel(x, y)))
+            .map(|(x, y, ray)| (x, y, world.color_at(ray)))
+            .collect::<Vec<_>>()
+            .iter()
+            .for_each(|(x, y, color)| {
+                //image.pixels[(y * image.width as u32 + x) as usize] = color;
+                image.write_pixel(*x as isize, *y as isize, *color);
+            });
 
         image
     }
