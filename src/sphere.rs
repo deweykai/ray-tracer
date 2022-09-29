@@ -39,10 +39,10 @@ impl Sphere {
                 .inverse()
                 .expect("could not inverse ray transform"),
         );
-        let origin = ray.origin.as_tuple();
-        let direction = ray.direction.as_tuple();
+        let origin = ray.origin;
+        let direction = ray.direction;
 
-        let sphere_to_ray = origin - Point::new(0.0, 0.0, 0.0).as_tuple();
+        let sphere_to_ray = origin - Point::new(0.0, 0.0, 0.0);
 
         let a = direction.dot(direction);
         let b = 2.0 * direction.dot(sphere_to_ray);
@@ -67,7 +67,8 @@ impl Sphere {
             .inverse()
             .expect("failed to inverse sphere transform")
             * world_p;
-        let object_normal = object_p - Point::new(0.0, 0.0, 0.0).as_tuple();
+
+        let object_normal = Point::try_from(object_p).unwrap() - Point::new(0.0, 0.0, 0.0);
 
         let mut world_normal = self
             .transform

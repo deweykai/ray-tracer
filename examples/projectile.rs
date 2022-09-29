@@ -30,12 +30,12 @@ impl Projectile {
 fn main() {
     let mut c = Canvas::new(900, 500);
     let mut p = Projectile::new(
-        Point::new(0., 1., 0.).as_tuple(),
-        Vector::new(1., 1.8, 0.).as_tuple() * 11.25,
+        Point::new(0., 1., 0.).into(),
+        (Vector::new(1., 1.8, 0.) * 11.25).into(),
     );
     let e = Env {
-        gravity: Vector::new(0., -0.1, 0.).as_tuple(),
-        wind: Vector::new(-0.01, 0., 0.).as_tuple(),
+        gravity: Vector::new(0., -0.1, 0.).into(),
+        wind: Vector::new(-0.01, 0., 0.).into(),
     };
     loop {
         p = p.tick(&e);

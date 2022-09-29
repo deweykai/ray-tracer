@@ -114,15 +114,13 @@ impl Div<f64> for Tuple {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Vector(Tuple);
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Point(Tuple);
 
 impl Vector {
     pub fn new(x: f64, y: f64, z: f64) -> Vector {
         Vector(Tuple::new(x, y, z, 0.0))
     }
 
-    pub fn as_tuple(self) -> Tuple {
+    fn as_tuple(self) -> Tuple {
         Tuple::from(self)
     }
 
@@ -130,6 +128,41 @@ impl Vector {
         let normal = normal.as_tuple();
         let inv = self.as_tuple();
         (inv - normal * 2.0 * inv.dot(normal)).try_into().unwrap()
+    }
+
+    pub fn normalize(self) -> Vector {
+        self.as_tuple().normalize().try_into().unwrap()
+    }
+
+    pub fn cross(self, rhs: Vector) -> Vector {
+        self.as_tuple().cross(rhs.as_tuple()).try_into().unwrap()
+    }
+
+    pub fn dot(self, rhs: Vector) -> f64 {
+        self.as_tuple().dot(rhs.as_tuple()).try_into().unwrap()
+    }
+}
+
+macro_rules! impl_vector_tuple_ops {
+    ($trait:ty, $fn:ident, $rhs:ty) => {
+        impl $trait for Vector {
+            type Output = Vector;
+            fn $fn(self, rhs: $rhs) -> Self {
+                self.as_tuple().$fn(rhs.into()).try_into().unwrap()
+            }
+        }
+    };
+}
+
+impl_vector_tuple_ops!(Add, add, Vector);
+impl_vector_tuple_ops!(Sub, sub, Vector);
+impl_vector_tuple_ops!(Mul<f64>, mul, f64);
+impl_vector_tuple_ops!(Div<f64>, div, f64);
+
+impl Neg for Vector {
+    type Output = Vector;
+    fn neg(self) -> Self::Output {
+        (self.as_tuple().neg()).try_into().unwrap()
     }
 }
 
@@ -151,12 +184,14 @@ impl TryFrom<Tuple> for Vector {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Point(Tuple);
 impl Point {
     pub fn new(x: f64, y: f64, z: f64) -> Point {
         Point(Tuple::new(x, y, z, 1.0))
     }
 
-    pub fn as_tuple(self) -> Tuple {
+    fn as_tuple(self) -> Tuple {
         Tuple::from(self)
     }
 }
@@ -176,6 +211,13 @@ impl TryFrom<Tuple> for Point {
         } else {
             Err("failed to convert a tuple into a point")
         }
+    }
+}
+
+impl Sub for Point {
+    type Output = Vector;
+    fn sub(self, rhs: Self) -> Self::Output {
+        (self.as_tuple() - rhs.as_tuple()).try_into().unwrap()
     }
 }
 

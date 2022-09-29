@@ -17,13 +17,13 @@ impl<'a> Intersection<'a> {
         let t = self.t;
         let point = ray.position(self.t);
         let object = self.object;
-        let eyev: Vector = (-ray.direction.as_tuple()).try_into().unwrap();
+        let eyev: Vector = (-ray.direction).try_into().unwrap();
         let mut normal = self.object.normal_at(point);
         let mut inside = false;
 
-        if normal.as_tuple().dot(eyev.as_tuple()) < 0.0 {
+        if normal.dot(eyev) < 0.0 {
             inside = true;
-            normal = (-normal.as_tuple()).try_into().unwrap();
+            normal = -normal;
         }
 
         Computations {

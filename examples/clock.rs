@@ -11,7 +11,7 @@ fn main() {
     let mut canv = Canvas::new(width, height);
 
     for i in 0..12 {
-        let p = Point::new(1.0, 0.0, 0.0).as_tuple();
+        let p = Point::new(1.0, 0.0, 0.0);
         let a = transformations::rotation_z(i as f64 * PI / 6.0);
         let b = transformations::scaling(width as f64 / 3.0, height as f64 / 3.0, 0.0);
         let c = transformations::translation(width as f64 / 2.0, height as f64 / 2.0, 0.0);

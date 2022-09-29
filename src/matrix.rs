@@ -130,7 +130,7 @@ impl Matrix {
 
 #[macro_export]
 macro_rules! matrix {
-    ($([$($x:expr),+]),+) => {
+    ($([$($x:expr),+ $(,)?]),+ $(,)?) => {
         {
             let mut data = Vec::new();
             $(

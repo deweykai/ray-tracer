@@ -29,19 +29,13 @@ fn main() {
             let world_x = -half + pixel_size * x as f64;
 
             let position = Point::new(world_x, world_y, wall_z);
-            let r = Ray::new(
-                ray_origin,
-                (position.as_tuple() - ray_origin.as_tuple())
-                    .normalize()
-                    .try_into()
-                    .unwrap(),
-            );
+            let r = Ray::new(ray_origin, (position - ray_origin).normalize());
 
             let xs = s.intersect(r);
             if let Some(hit) = xs.hit() {
                 let point = r.position(hit.t);
                 let normal = hit.object.normal_at(point);
-                let eye: Vector = (-r.direction.as_tuple()).try_into().unwrap();
+                let eye: Vector = -r.direction;
                 let color = lighting(hit.object.material, light, point, eye, normal);
                 canv = canv.write_pixel(x, y, color);
             }

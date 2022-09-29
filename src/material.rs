@@ -34,17 +34,14 @@ pub fn lighting(
     let effective_color = material.color * light.intensity;
 
     // find direction of light source
-    let lightv: Vector = (light.position.as_tuple() - point.as_tuple())
-        .normalize()
-        .try_into()
-        .unwrap();
+    let lightv: Vector = (light.position - point).normalize();
 
     // compute ambient light
     let ambient = effective_color * material.ambient;
 
     // light_dote represents cosine of angle between light and normal vector
     // negative means light is on other side of surface
-    let light_dot_normal = lightv.as_tuple().dot(normalv.as_tuple());
+    let light_dot_normal = lightv.dot(normalv);
     let (diffuse, specular) = if light_dot_normal < 0.0 {
         (BLACK, BLACK)
     } else {
@@ -52,10 +49,8 @@ pub fn lighting(
 
         // reflect dot eye represents the cosine of the angle between the
         // reflection and the eye
-        let reflectv: Vector = Vector::try_from(-lightv.as_tuple())
-            .unwrap()
-            .reflect(normalv);
-        let reflect_dot_eye = reflectv.as_tuple().dot(eyev.as_tuple());
+        let reflectv = -lightv.reflect(normalv);
+        let reflect_dot_eye = reflectv.dot(eyev);
         let specular = if reflect_dot_eye <= 0.0 {
             BLACK
         } else {
