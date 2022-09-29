@@ -7,7 +7,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 #[derive(Debug, PartialEq)]
 pub struct Sphere {
-    pub id: u32,
+    id: u32,
     pub transform: Matrix,
     pub material: Material,
 }
