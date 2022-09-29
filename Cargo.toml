@@ -10,3 +10,4 @@ debug = 1
 
 [dependencies]
 crossbeam = "0.8.2"
+rayon = "1.5.3"

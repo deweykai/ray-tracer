@@ -1,10 +1,9 @@
-use std::thread;
-
 use crate::canvas::Canvas;
 use crate::matrix::Matrix4;
 use crate::ray::Ray;
 use crate::tuple::Point;
 use crate::world::World;
+use rayon::prelude::*;
 
 pub struct Camera {
     hsize: u32,
@@ -68,30 +67,17 @@ impl Camera {
     pub fn render(&self, world: &World) -> Canvas {
         let mut image = Canvas::new(self.hsize as isize, self.vsize as isize);
 
-        image = crossbeam::scope(|scope| {
-            let mut handles = Vec::new();
-
-            for y in 0..self.vsize {
-                handles.push(scope.spawn(move |_| {
-                    let mut row = Vec::new();
-                    for x in 0..self.hsize {
-                        let ray = self.ray_for_pixel(x, y);
-                        row.push(world.color_at(ray));
-                    }
-                    row
-                }));
-            }
-
-            for (y, handle) in handles.into_iter().enumerate() {
-                let row = handle.join().unwrap();
-                for x in 0..self.hsize {
-                    image = image.write_pixel(x as isize, y as isize, row[x as usize]);
-                }
-            }
-
-            image
-        })
-        .unwrap();
+        (0..self.vsize)
+            .into_par_iter()
+            .flat_map(|y| (0..self.hsize).into_par_iter().map(move |x| (x, y)))
+            .map(|(x, y)| (x, y, self.ray_for_pixel(x, y)))
+            .map(|(x, y, ray)| (x, y, world.color_at(ray)))
+            .collect::<Vec<_>>()
+            .iter()
+            .for_each(|(x, y, color)| {
+                //image.pixels[(y * image.width as u32 + x) as usize] = color;
+                image.write_pixel(*x as isize, *y as isize, *color);
+            });
 
         image
     }

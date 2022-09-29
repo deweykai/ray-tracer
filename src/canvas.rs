@@ -1,6 +1,6 @@
 use crate::color::Color;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Canvas {
     pub width: isize,
     pub height: isize,
@@ -34,11 +34,11 @@ impl Canvas {
         Canvas {
             width,
             height,
-            pixels,
+            pixels: pixels,
         }
     }
 
-    pub fn write_pixel(mut self, x: isize, y: isize, color: Color) -> Canvas {
+    pub fn write_pixel(&mut self, x: isize, y: isize, color: Color) -> &mut Canvas {
         if x < 0 || x >= self.width || y < 0 || y >= self.height {
             return self;
         }
@@ -83,7 +83,7 @@ mod tests {
     fn write_to_canvas() {
         let mut c = Canvas::new(10, 20);
         let red = Color::new(1., 0., 0.);
-        c = c.write_pixel(2, 3, red);
+        c.write_pixel(2, 3, red);
         assert_eq!(c.read_pixel(2, 3).expect("failed to read pixel"), red);
     }
     #[test]
@@ -91,8 +91,8 @@ mod tests {
         let c1 = Color::new(1.5, 0.0, 0.0);
         let c2 = Color::new(0.0, 0.5, 0.0);
         let c3 = Color::new(-0.5, 0.0, 1.0);
-        let c = Canvas::new(5, 3)
-            .write_pixel(0, 0, c1)
+        let mut c = Canvas::new(5, 3);
+        c.write_pixel(0, 0, c1)
             .write_pixel(2, 1, c2)
             .write_pixel(4, 2, c3);
         let ppm = c.to_ppm();
@@ -117,9 +117,12 @@ mod tests {
     #[test]
     fn split_ppm_long_lines() {
         let c1 = Color::new(1.0, 0.8, 0.6);
-        let c = (0..10).fold(Canvas::new(10, 2), |c, x| {
-            (0..2).fold(c, |c, y| c.write_pixel(x, y, c1))
-        });
+        let mut c = Canvas::new(10, 2);
+        for x in 0..10 {
+            for y in 0..2 {
+                c.write_pixel(x, y, c1);
+            }
+        }
         let ppm = c.to_ppm();
         let ppm_lines: Vec<&str> = ppm.split('\n').collect();
         assert_eq!(
