@@ -15,6 +15,7 @@ pub struct Camera {
     half_height: f64,
     pixel_size: f64,
     transform: Matrix,
+    inv_transform: Matrix,
 }
 
 impl Camera {
@@ -36,10 +37,12 @@ impl Camera {
             half_width,
             pixel_size,
             transform: Matrix::identity(4),
+            inv_transform: Matrix::identity(4),
         }
     }
 
     pub fn set_transform(&mut self, transform: Matrix) {
+        self.inv_transform = transform.inverse().expect("Fail to inverse camera matrix");
         self.transform = transform;
     }
 
@@ -54,10 +57,8 @@ impl Camera {
         // camera matrix to transform the canvas point and origin
         // canvas at z = -1
         let pixel =
-            Point::try_from(self.transform.inverse().unwrap() * Point::new(world_x, world_y, -1.0))
-                .unwrap();
-        let origin =
-            Point::try_from(self.transform.inverse().unwrap() * Point::new(0.0, 0.0, 0.0)).unwrap();
+            Point::try_from(&self.inv_transform * Point::new(world_x, world_y, -1.0)).unwrap();
+        let origin = Point::try_from(&self.inv_transform * Point::new(0.0, 0.0, 0.0)).unwrap();
         let direction = (pixel - origin).normalize();
         Ray::new(origin, direction)
     }
