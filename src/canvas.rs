@@ -1,4 +1,5 @@
 use crate::color::Color;
+use rayon::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct Canvas {
@@ -53,8 +54,10 @@ impl Canvas {
     pub fn to_ppm(&self) -> String {
         let header = format!("P3\n{} {}\n255", self.width, self.height);
         let body = (0..self.height)
+            .into_par_iter()
             .map(|y| {
                 (0..self.width)
+                    .into_par_iter()
                     .map(|x| self.read_pixel(x, y).unwrap())
                     .map(|p| p.to_string())
                     .collect::<Vec<_>>()
