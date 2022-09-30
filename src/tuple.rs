@@ -224,6 +224,13 @@ impl Sub for Point {
     }
 }
 
+impl Add<Vector> for Point {
+    type Output = Point;
+    fn add(self, rhs: Vector) -> Self::Output {
+        (Tuple::from(self) + Tuple::from(rhs)).try_into().unwrap()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
