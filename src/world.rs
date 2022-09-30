@@ -37,6 +37,7 @@ impl World {
                 comp.point,
                 comp.eyev,
                 comp.normal,
+                false,
             )
         }
         c
