@@ -33,6 +33,7 @@ impl<'a> Intersection<'a> {
             eyev,
             normal,
             inside,
+            over_point: point + normal * f64::EPSILON,
         }
     }
 }
@@ -44,6 +45,7 @@ pub struct Computations<'a> {
     pub eyev: Vector,
     pub normal: Vector,
     pub inside: bool,
+    pub over_point: Point,
 }
 
 #[derive(Debug, Clone, PartialEq)]
