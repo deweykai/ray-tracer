@@ -6,7 +6,7 @@ pub struct Tuple {
     pub w: f64,
 }
 
-const EPSILON: f64 = 1e-5;
+pub const EPSILON: f64 = 1e-5;
 
 impl Tuple {
     pub fn new(x: f64, y: f64, z: f64, w: f64) -> Tuple {

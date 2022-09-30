@@ -33,7 +33,7 @@ impl<'a> Intersection<'a> {
             eyev,
             normal,
             inside,
-            over_point: point + normal * f64::EPSILON,
+            over_point: point + normal * crate::tuple::EPSILON,
         }
     }
 }
